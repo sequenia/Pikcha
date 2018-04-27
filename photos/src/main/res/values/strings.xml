@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">photo</string>
+
+    <!-- Пермишины -->
+    <string name="permissions_string_help_text">Отсутствуют разрешения.\n\nЧтобы предоставить разрешения, нажмите "Настройки", затем "Разрешения" и включите их.\n\nЗатем вернитесь в приложение.</string>
+    <string name="permissions_quit">Закрыть</string>
+    <string name="permissions_settings">Настройки</string>
+    <string name="permissions_help">Помощь</string>
+
+    <!-- Тексты ошибок -->
+    <string name="take_photo_path_null">Не указан путь к фотографии</string>
+    <string name="take_photo_path_not_find">По указанному пути не нашлось фотографии</string>
+
+    <string name="add_photo">Добавить фотографию</string>
+</resources>
