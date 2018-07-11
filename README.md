@@ -1,5 +1,16 @@
 Модуль для добавления фотографий с камеры и из галереи. Обработка разрешений для Android 6.0 и выше реализована.
 
+### Подключение
+
+    allprojects {
+	    repositories {
+			maven { url 'https://jitpack.io' }
+		}
+	}
+    
+    dependencies {
+	    compile 'com.github.Ringo-Freek:Photos:v2.0'
+	}
 ### Объявление
 
     photos = new Photos(Fragment)
