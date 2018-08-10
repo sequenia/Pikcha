@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,6 +27,7 @@ public class FilesManager {
 
     /**
      * Создает файл для записи фотографии
+     *
      * @return возвращает созданный файл
      * @throws IOException
      */
@@ -33,15 +35,16 @@ public class FilesManager {
         return createFile(createOpenDirectory(context), "jpg");
     }
 
-    public static File createJPGFileInCloseDirectory(Context context) throws IOException{
+    public static File createJPGFileInCloseDirectory(Context context) throws IOException {
         return createFile(createCloseDirectory(context), "jpg");
     }
 
     /**
      * Создание закрытой директории (доступ только для приложения)
+     *
      * @return - директория
      */
-    public static File createCloseDirectory(Context context){
+    public static File createCloseDirectory(Context context) {
         return isExternalStorageWritable() ? context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                 : context.getFilesDir();
     }
@@ -49,9 +52,10 @@ public class FilesManager {
     /**
      * Создание открытой директории
      * (файлы отображаются в проводниках)
+     *
      * @return - директория
      */
-    public static File createOpenDirectory(Context context){
+    public static File createOpenDirectory(Context context) {
         return isExternalStorageWritable() ? Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES) :
                 context.getDir(Environment.DIRECTORY_PICTURES, Context.MODE_PRIVATE);
@@ -59,8 +63,9 @@ public class FilesManager {
 
     /**
      * Создание файла в указанной директории и с указанным расширением
+     *
      * @param storageDir - директория
-     * @param exp - расширение
+     * @param exp        - расширение
      * @return - созданный файл
      * @throws IOException
      */
@@ -79,6 +84,7 @@ public class FilesManager {
 
     /**
      * Запись битмапа в файл
+     *
      * @param base - битмап, который нужно сохранить в файле
      * @throws IOException
      */
@@ -141,7 +147,7 @@ public class FilesManager {
                 }
 
                 final String selection = "_id=?";
-                final String[] selectionArgs = new String[] {
+                final String[] selectionArgs = new String[]{
                         split[1]
                 };
 
@@ -164,9 +170,9 @@ public class FilesManager {
      * Get the value of the data column for this Uri. This is useful for
      * MediaStore Uris, and other file-based ContentProviders.
      *
-     * @param context The context.
-     * @param uri The Uri to query.
-     * @param selection (Optional) Filter used in the query.
+     * @param context       The context.
+     * @param uri           The Uri to query.
+     * @param selection     (Optional) Filter used in the query.
      * @param selectionArgs (Optional) Selection arguments used in the query.
      * @return The value of the _data column, which is typically a file path.
      */
@@ -196,24 +202,26 @@ public class FilesManager {
     /**
      * Проверка файла на существование и
      * корректность информации
+     *
      * @param uri - путь к файлу
      * @return - true - файл существует и информация в нем корректна
      */
-    public static boolean checkedFile(Context context, Uri uri){
+    public static boolean checkedFile(Context context, Uri uri) {
         return checkedFile(getPath(context, uri));
     }
 
     /**
      * Проверка файла на существование и
      * корректность информации
+     *
      * @param path - путь к файлу
      * @return - true - файл существует и информация в нем корректна
      */
-    public static boolean checkedFile(String path){
-        if(path != null) {
+    public static boolean checkedFile(String path) {
+        if (path != null) {
             File file = new File(path);
             return file.exists() && file.length() > 0;
-        }else{
+        } else {
             return false;
         }
     }
@@ -222,9 +230,9 @@ public class FilesManager {
      * Удаляем все содержимое каталога
      * катинок продуктов
      */
-    public static void deleteFile(String path){
+    public static void deleteFile(String path) {
         File file = new File(path);
-        if(file.exists()){
+        if (file.exists()) {
             file.delete();
         }
     }
@@ -251,6 +259,24 @@ public class FilesManager {
      */
     public static boolean isMediaDocument(Uri uri) {
         return "com.android.providers.media.documents".equals(uri.getAuthority());
+    }
+
+    /**
+     * Получение URI для файла
+     *
+     * @param context - контекст
+     * @param file - файл
+     * @return - URI
+     */
+    public static Uri getFileUri(Context context, File file) {
+        Uri uri;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            uri = Uri.fromFile(file);
+        } else {
+            uri = FileProvider.getUriForFile(context,
+                    context.getPackageName() + ".provider", file);
+        }
+        return uri;
     }
 
 }
