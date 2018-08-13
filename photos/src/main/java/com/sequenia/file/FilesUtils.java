@@ -2,6 +2,7 @@ package com.sequenia.file;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.media.ExifInterface;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 
@@ -278,6 +279,18 @@ public class FilesUtils {
 
         File file = new File(path);
         return file.exists() && file.length() > 0;
+    }
+
+    /**
+     * Получение поворота файла
+     *
+     * @param path - путь к файлу
+     * @return - поворот файла
+     */
+    public int getFileOrientation(String path) throws IOException {
+        ExifInterface exif = new ExifInterface(path);
+        return exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_UNDEFINED);
     }
 
 }
