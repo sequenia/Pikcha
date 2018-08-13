@@ -8,16 +8,22 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.sequenia.navigation_router.NavigationRouter;
 import com.sequenia.photo.Photos;
 import com.sequenia.photo.listeners.ResultFromCamera;
 import com.sequenia.photo.listeners.ResultFromGallery;
+import com.squareup.picasso.Picasso;
+
+import java.io.File;
 
 public class AddPhotoFragment extends Fragment
         implements NavigationRouter.Replaceable, ResultFromCamera, ResultFromGallery {
 
     private Photos photos;
+
+    private ImageView photo;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -36,6 +42,8 @@ public class AddPhotoFragment extends Fragment
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        photo = view.findViewById(R.id.photo);
 
         view.findViewById(R.id.open_camera).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -75,5 +83,8 @@ public class AddPhotoFragment extends Fragment
 
     private void showPhoto(String path){
         // Абсолютны путь к файлу, можно отображать
+        Picasso.with(getContext())
+                .load(new File(path))
+                .into(photo);
     }
 }

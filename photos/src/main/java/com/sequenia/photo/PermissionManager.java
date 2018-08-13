@@ -18,7 +18,6 @@ public class PermissionManager {
     public static void storagePermission(Context context, PermissionListener listener){
         permissions(context, listener,
                 Manifest.permission.CAMERA,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 

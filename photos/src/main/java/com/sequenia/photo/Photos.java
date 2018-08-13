@@ -1,18 +1,18 @@
 package com.sequenia.photo;
 
 import android.app.Activity;
-import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.FileProvider;
 
 import com.gun0912.tedpermission.PermissionListener;
+import com.sequenia.file.CursorUtils;
+import com.sequenia.file.FilesUtils;
+import com.sequenia.file.UriUtils;
 import com.sequenia.photo.listeners.MultiResultFromGallery;
 import com.sequenia.photo.listeners.PhotoErrors;
 import com.sequenia.photo.listeners.PhotoWait;
@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * Created by Ringo on 30.06.2016.
- *
+ * <p>
  * Класс, осуществляющий всю работу
  * с фотографиями
  * - добавить фотографию из галереи
@@ -38,6 +38,9 @@ public class Photos {
 
     private static final int GALLERY_REQUEST = 10101;
     private static final int TAKE_PHOTO_REQUEST = 20202;
+
+    private static final int COUNT_REPEAT = 10;
+    private static final int REPEAT_DELAY = 1000;
 
     private int lastEvent;                                  // Последнее действие (нужно для перезапуска, после выставления пермишенов)
     private boolean isMultiChoice;                          // Для выбора из галереи true - множественный
@@ -124,17 +127,21 @@ public class Photos {
      * Выбор фотографий из галереи
      */
     private void openGallery() {
+        if(intentForResult == null) {
+            showIntentError();
+            return;
+        }
+
         Intent intent = new Intent();
         intent.setType("image/*");
-        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1) {
             intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, isMultiChoice);
         }
         intent.setAction(Intent.ACTION_GET_CONTENT);
-        if (intentForResult != null) {
-            intentForResult.startIntentForPhoto(
-                    Intent.createChooser(intent, getText(R.string.add_photo)), GALLERY_REQUEST
-            );
-        }
+        intentForResult.startIntentForPhoto(
+                Intent.createChooser(intent, getText(R.string.add_photo)),
+                GALLERY_REQUEST
+        );
     }
 
     /**
@@ -150,21 +157,34 @@ public class Photos {
      */
     private void openCamera() {
         try {
-            File image = FilesManager.createJPGFileInOpenDirectory(context);
-            filePath = image.getAbsolutePath();
+
+            if(intentForResult == null) {
+                showIntentError();
+                return;
+            }
 
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (intentForResult != null &&
-                    takePictureIntent.resolveActivity(context.getPackageManager()) != null) {
-                takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                        FilesManager.getFileUri(context, image));
-                intentForResult.startIntentForPhoto(takePictureIntent, TAKE_PHOTO_REQUEST);
-            } else {
-                errors.errorTakePhotoFromCamera(getText(R.string.not_found_camera));
+            if (takePictureIntent.resolveActivity(context.getPackageManager()) == null) {
+                showCameraError(getText(R.string.not_found_camera));
+                return;
             }
+
+            File image = FilesUtils.createJPGFileInOpenDirectory(context);
+
+            if(image == null) {
+                showCameraError(getText(R.string.create_file_error));
+                return;
+            }
+
+            filePath = image.getAbsolutePath();
+
+            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                    UriUtils.getFileUri(context, image));
+            intentForResult.startIntentForPhoto(takePictureIntent, TAKE_PHOTO_REQUEST);
+
         } catch (IOException exc) {
-            errors.errorTakePhotoFromCamera(exc.getMessage());
+            showCameraError(exc.getMessage());
         }
     }
 
@@ -191,20 +211,19 @@ public class Photos {
      * Достать путь к уже сделанной фотографии
      */
     private void photoFromCamera() {
-        // файл для сохранения фотографии не создался
-        if (filePath != null) {
-            // если файл существует и его размер больше 0
-            if (FilesManager.checkedFile(filePath)) {
-                returnResultFromCamera(filePath);
-            } else {
-                if (photoWait != null) {
-                    photoWait.visibilityWait(true);
-                }
-                getPhotoPathAsync(0);
-            }
-        } else {
-            errors.errorTakePhotoFromCamera(getText(R.string.take_photo_path_null));
+        if(filePath == null) {
+            showCameraError(getText(R.string.take_photo_path_null));
+            return;
         }
+
+        // если файл существует и его размер больше 0
+        if (FilesUtils.checkedFile(filePath)) {
+            returnResultFromCamera(filePath);
+            return;
+        }
+
+        setPhotoWaitState(true);
+        getPhotoPathAsync(0);
     }
 
     /**
@@ -213,38 +232,74 @@ public class Photos {
      * @param data - хранится информация
      */
     private void photoFromGallery(Intent data) {
-        try {
-            if (null == data.getData()) {
-                ClipData clipdata = data.getClipData();
+        List<Uri> uris = UriUtils.getUrisFromData(data);
+        if (uris == null || uris.isEmpty()) {
+            showGalleryError(getText(R.string.take_photo_path_not_find));
+            return;
+        }
+        returnResultFromGallery(uris);
+    }
 
-                if (clipdata != null) {
-                    ArrayList<Uri> uris = new ArrayList<>();
-                    for (int i = 0; i < clipdata.getItemCount(); i++) {
-                        uris.add(clipdata.getItemAt(i).getUri());
-                    }
+    /**
+     * Ожидание появление фотографии в альбоме
+     *
+     * @param tryCount - количество попыток 10
+     */
+    private void getPhotoPathAsync(final int tryCount) {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (FilesUtils.checkedFile(filePath)) {
+                    setPhotoWaitState(false);
+                    returnResultFromCamera(filePath);
+                    return;
+                }
 
-                    if (uris.size() > 1) {
-                        returnResultFromGallery(uris);
-                    } else {
-                        if (!uris.isEmpty()) {
-                            returnResultFromGallery(uris);
-                        } else {
-                            errors.errorSelectedPhotoFromGallery(
-                                    getText(R.string.take_photo_path_not_find));
-                        }
-                    }
+                if (tryCount >= COUNT_REPEAT) {
+                    setPhotoWaitState(false);
+                    getPathLastPhoto();
+                    return;
                 }
-            } else {
-                Uri uri = data.getData();
-                if (uri != null) {
-                    returnResultFromGallery(data.getData());
-                } else {
-                    errors.errorSelectedPhotoFromGallery(getText(R.string.take_photo_path_not_find));
-                }
+
+                getPhotoPathAsync(tryCount + 1);
             }
-        } catch (SecurityException se) {
-            se.printStackTrace();
-            errors.errorTakePhotoFromCamera(se.getMessage());
+        }, REPEAT_DELAY);
+    }
+
+    /**
+     * Попытка достать последнюю
+     * фотографию из галлереи
+     */
+    private void getPathLastPhoto() {
+        filePath = CursorUtils.getLastImageFile(context);
+
+        if(filePath == null) {
+            showCameraError(getText(R.string.take_photo_path_null));
+            return;
+        }
+
+        returnResultFromCamera(filePath);
+    }
+
+    /**
+     * Возвращение результата из галереи
+     *
+     * @param uris - список URIS выбранных файлов
+     */
+    private void returnResultFromGallery(List<Uri> uris) {
+        List<String> paths = new ArrayList<>();
+        for (Uri uri : uris) {
+            paths.add(UriUtils.getPath(context, uri));
+        }
+
+        if (paths.size() == 1) {
+            if (resultFromGallery != null) {
+                resultFromGallery.getPathFromGallery(paths.get(0));
+            }
+        }
+
+        if (multiResultFromGallery != null) {
+            multiResultFromGallery.getPathsFromGallery(paths);
         }
     }
 
@@ -259,99 +314,32 @@ public class Photos {
         }
     }
 
-    /**
-     * Возвращение результата из галереи
-     *
-     * @param uri - путь из галереи
-     */
-    private void returnResultFromGallery(Uri uri) {
-        if (resultFromGallery != null) {
-            resultFromGallery.getPathFromGallery(getPath(uri));
+    private void showGalleryError(String error) {
+        if (errors != null) {
+            errors.errorSelectedPhotoFromGallery(error);
         }
     }
 
-    private void returnResultFromGallery(ArrayList<Uri> uris) {
-        List<String> paths = new ArrayList<>();
-        for (int i = 0; i < uris.size(); i++) {
-            paths.add(FilesManager.getPath(context, uris.get(i)));
-        }
-        if (multiResultFromGallery != null) {
-            multiResultFromGallery.getPathsFromGallery(paths);
+    private void showCameraError(String error) {
+        if (errors != null) {
+            errors.errorTakePhotoFromCamera(error);
         }
     }
 
-    private String getPath(Uri uri) {
-        return FilesManager.getPath(context, uri);
-    }
-
-    /**
-     * Ожидание появление фотографии в альбоме
-     *
-     * @param tryCount - количество попыток 10
-     */
-    private void getPhotoPathAsync(final int tryCount) {
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (FilesManager.checkedFile(filePath)) {
-                    if (photoWait != null) {
-                        photoWait.visibilityWait(false);
-                    }
-                    returnResultFromCamera(filePath);
-                } else {
-                    if (tryCount >= 10) {
-                        if (errors != null) {
-                            if (photoWait != null) {
-                                photoWait.visibilityWait(false);
-                            }
-                            getPathLastPhoto();
-                        }
-                    } else {
-                        getPhotoPathAsync(tryCount + 1);
-                    }
-                }
-            }
-        }, 1000);
-    }
-
-    /**
-     * Попытка достать последнюю
-     * фотографию из галлереи
-     */
-    private void getPathLastPhoto() {
-        filePath = getLastPhotoInGallery();
-        if (filePath != null) {
-            returnResultFromCamera(filePath);
-        } else {
-            errors.errorTakePhotoFromCamera(getText(R.string.take_photo_path_null));
+    private void setPhotoWaitState(boolean state) {
+        if (photoWait != null) {
+            photoWait.visibilityWait(state);
         }
     }
 
-    /**
-     * @return путь к последней фотографии из галереи
-     */
-    private String getLastPhotoInGallery() {
-        String path = null;
-        // Find the last picture
-        String[] projection = new String[]{
-                MediaStore.Images.ImageColumns._ID,
-                MediaStore.Images.ImageColumns.DATA,
-                MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
-                MediaStore.Images.ImageColumns.DATE_TAKEN,
-                MediaStore.Images.ImageColumns.MIME_TYPE
-        };
+    private void showIntentError() {
+        String error = getText(R.string.intent_error);
+        showCameraError(error);
+        showGalleryError(error);
+    }
 
-        final Cursor cursor = context.getContentResolver()
-                .query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, null,
-                        null, MediaStore.Images.ImageColumns.DATE_TAKEN + " DESC");
-
-        // Put it in the image view
-        if (cursor != null && cursor.moveToFirst()) {
-            path = cursor.getString(1);
-            cursor.close();
-        }
-
-        return path;
+    private String getText(int res) {
+        return context.getString(res);
     }
 
     private PermissionListener getPermissionListener() {
@@ -374,9 +362,5 @@ public class Photos {
 
             }
         };
-    }
-
-    private String getText(int res) {
-        return context.getString(res);
     }
 }
