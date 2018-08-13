@@ -23,6 +23,7 @@ import com.sequenia.photo.repository.Repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,38 +56,38 @@ public class Photos {
     private PhotoWait photoWait;                            // Показатель ожидания
     private StartIntentForResult intentForResult;           // Интерфейс на реализацию метода открытия intent
 
-    private Context context;
+    private WeakReference<Context> weakReferenceContext;
 
     public Photos(Activity activity) {
-        this.context = activity;
+        setContext(activity);
 
-        if (context instanceof ResultFromCamera) {
-            resultPathFormCamera = (ResultFromCamera) context;
+        if (activity instanceof ResultFromCamera) {
+            resultPathFormCamera = (ResultFromCamera) activity;
         }
 
-        if (context instanceof ResultFromGallery) {
-            resultFromGallery = (ResultFromGallery) context;
+        if (activity instanceof ResultFromGallery) {
+            resultFromGallery = (ResultFromGallery) activity;
         }
 
-        if (context instanceof PhotoErrors) {
-            errors = (PhotoErrors) context;
+        if (activity instanceof PhotoErrors) {
+            errors = (PhotoErrors) activity;
         }
 
-        if (context instanceof PhotoWait) {
-            photoWait = (PhotoWait) context;
+        if (activity instanceof PhotoWait) {
+            photoWait = (PhotoWait) activity;
         }
 
-        if (context instanceof MultiResultFromGallery) {
-            multiResultFromGallery = (MultiResultFromGallery) context;
+        if (activity instanceof MultiResultFromGallery) {
+            multiResultFromGallery = (MultiResultFromGallery) activity;
         }
 
-        if (context instanceof StartIntentForResult) {
-            intentForResult = (StartIntentForResult) context;
+        if (activity instanceof StartIntentForResult) {
+            intentForResult = (StartIntentForResult) activity;
         }
     }
 
     public Photos(Fragment fragment) {
-        this.context = fragment.getContext();
+        setContext(fragment.getContext());
 
         if (fragment instanceof ResultFromCamera) {
             resultPathFormCamera = (ResultFromCamera) fragment;
@@ -113,6 +114,18 @@ public class Photos {
         }
     }
 
+    private void setContext(Context context) {
+        weakReferenceContext = new WeakReference<>(context);
+    }
+
+    private Context getContext() {
+        if(weakReferenceContext == null) {
+            return null;
+        }
+
+        return weakReferenceContext.get();
+    }
+
     /**
      * Выбор фотографий из галереи
      *
@@ -121,7 +134,11 @@ public class Photos {
     public void selectedPhotoFromGallery(boolean isMultiChoice) {
         lastEvent = GALLERY_REQUEST;
         this.isMultiChoice = isMultiChoice;
-        PermissionManager.storagePermission(context, getPermissionListener());
+
+        Context context = getContext();
+        if(context != null) {
+            PermissionManager.storagePermission(context, getPermissionListener());
+        }
     }
 
     /**
@@ -150,7 +167,10 @@ public class Photos {
      */
     public void takePhotoFromCamera() {
         lastEvent = TAKE_PHOTO_REQUEST;
-        PermissionManager.storagePermission(context, getPermissionListener());
+        Context context = getContext();
+        if(context != null) {
+            PermissionManager.storagePermission(context, getPermissionListener());
+        }
     }
 
     /**
@@ -158,6 +178,10 @@ public class Photos {
      */
     private void openCamera() {
         try {
+            Context context = getContext();
+            if(context == null) {
+                return;
+            }
 
             if(intentForResult == null) {
                 showIntentError();
@@ -214,6 +238,11 @@ public class Photos {
      * Достать путь к уже сделанной фотографии
      */
     private void photoFromCamera() {
+        Context context = getContext();
+        if(context == null) {
+            return;
+        }
+
         // возможно, экран пересоздался
         if(filePath == null) {
             filePath = Repository.getPath(context);
@@ -281,6 +310,11 @@ public class Photos {
      * фотографию из галлереи
      */
     private void getPathLastPhoto() {
+        Context context = getContext();
+        if(context == null) {
+            return;
+        }
+
         filePath = CursorUtils.getLastImageFile(context);
 
         if(filePath == null) {
@@ -297,6 +331,11 @@ public class Photos {
      * @param uris - список URIS выбранных файлов
      */
     private void returnResultFromGallery(List<Uri> uris) {
+        Context context = getContext();
+        if(context == null) {
+            return;
+        }
+
         List<String> paths = new ArrayList<>();
         for (Uri uri : uris) {
             paths.add(UriUtils.getPath(context, uri));
@@ -349,6 +388,11 @@ public class Photos {
     }
 
     private String getText(int res) {
+        Context context = getContext();
+        if(context == null) {
+            return null;
+        }
+
         return context.getString(res);
     }
 
