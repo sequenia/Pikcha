@@ -81,7 +81,7 @@ public class AddPhotoFragment extends Fragment
         startActivityForResult(intent, requestCode);
     }
 
-    private void showPhoto(String path){
+    private void showPhoto(String path) {
         // Абсолютны путь к файлу, можно отображать
         Picasso.with(getContext())
                 .load(new File(path))
