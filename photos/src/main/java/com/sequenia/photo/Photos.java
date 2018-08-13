@@ -19,6 +19,7 @@ import com.sequenia.photo.listeners.PhotoWait;
 import com.sequenia.photo.listeners.ResultFromCamera;
 import com.sequenia.photo.listeners.ResultFromGallery;
 import com.sequenia.photo.listeners.StartIntentForResult;
+import com.sequenia.photo.repository.Repository;
 
 import java.io.File;
 import java.io.IOException;
@@ -177,6 +178,8 @@ public class Photos {
             }
 
             filePath = image.getAbsolutePath();
+            // Сохраняем, чтобы восстановить, если экран потеряется
+            Repository.savePath(context, filePath);
 
             takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
@@ -211,6 +214,13 @@ public class Photos {
      * Достать путь к уже сделанной фотографии
      */
     private void photoFromCamera() {
+        // возможно, экран пересоздался
+        if(filePath == null) {
+            filePath = Repository.getPath(context);
+            // подчищаем все, что хранится во временном хранилище
+            Repository.removePath(context);
+        }
+
         if(filePath == null) {
             showCameraError(getText(R.string.take_photo_path_null));
             return;
