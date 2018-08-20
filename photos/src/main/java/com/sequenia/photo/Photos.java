@@ -184,12 +184,6 @@ public class Photos {
                     photoFromCamera();
                     break;
             }
-        }else{
-            // Удаляем только в том случае, если создали и не вернули рещ
-            if(filePath != null &&
-                    (requestCode == GALLERY_REQUEST || requestCode == TAKE_PHOTO_REQUEST)){
-                FilesManager.deleteFile(filePath);
-            }
         }
     }
 
@@ -249,6 +243,7 @@ public class Photos {
             }
         }catch (SecurityException se){
             se.printStackTrace();
+            errors.errorSelectedPhotoFromGallery(se.getMessage());
         }
     }
 
