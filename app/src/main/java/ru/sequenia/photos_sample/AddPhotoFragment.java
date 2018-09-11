@@ -22,7 +22,6 @@ public class AddPhotoFragment extends Fragment
         implements NavigationRouter.Replaceable, ResultFromCamera, ResultFromGallery {
 
     private Photos photos;
-
     private ImageView photo;
 
     @Override
