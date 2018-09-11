@@ -7,7 +7,6 @@ import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
 
 /**
- * Created by Ringo on 06.10.2016.
  * Работа с пермишинами
  */
 public class PermissionManager {
@@ -15,15 +14,14 @@ public class PermissionManager {
     /**
      * запрос разрешения на телефон
      */
-    public static void storagePermission(Context context, PermissionListener listener){
+    public static void storagePermission(Context context, PermissionListener listener) {
         permissions(context, listener,
                 Manifest.permission.CAMERA,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 
     private static void permissions(Context context, PermissionListener permissionlistener,
-                                    String... permissions){
+                                    String... permissions) {
         TedPermission.with(context)
                 .setPermissionListener(permissionlistener)
                 .setDeniedMessage(R.string.permissions_string_help_text)

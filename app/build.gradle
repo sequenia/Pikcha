@@ -5,16 +5,19 @@ repositories {
 }
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion versions.compileSdk
     defaultConfig {
         applicationId "ru.sequenia.photos_sample"
-        minSdkVersion 15
-        targetSdkVersion 27
-        versionCode 3
-        versionName "2.3"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        minSdkVersion versions.minSdk
+        targetSdkVersion versions.targetSdk
+        versionCode versions.versionCode
+        versionName versions.versionName
     }
     buildTypes {
+        debug {
+            versionNameSuffix '-debug'
+        }
+
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -36,6 +39,9 @@ dependencies {
 
     // Вспомогательные библиотеки для примера
     implementation 'com.github.foxaice:NavigationRouter:v0.1-alpha'
+
+    implementation 'com.squareup.picasso:picasso:2.5.2'
+    implementation 'gun0912.ted:tedpermission:2.2.0'
 
     testCompile 'junit:junit:4.12'
     compile project(path: ':photos')
