@@ -37,10 +37,7 @@ dependencies {
 
     implementation "com.android.support:appcompat-v7:$support_version"
 
-    // Вспомогательные библиотеки для примера
-    implementation 'com.github.foxaice:NavigationRouter:v0.1-alpha'
-
-    implementation 'com.squareup.picasso:picasso:2.5.2'
+    //implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'gun0912.ted:tedpermission:2.2.0'
 
     testCompile 'junit:junit:4.12'
