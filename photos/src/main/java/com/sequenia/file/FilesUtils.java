@@ -3,12 +3,17 @@ package com.sequenia.file;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.media.ExifInterface;
+import android.net.Uri;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.support.annotation.NonNull;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -291,6 +296,37 @@ public class FilesUtils {
         ExifInterface exif = new ExifInterface(path);
         return exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
                 ExifInterface.ORIENTATION_UNDEFINED);
+    }
+
+    /**
+     * Копирует файл в новой директории
+     *
+     * @param context - контекст
+     * @param uri     - ури на файл
+     * @return - путь к файлу
+     */
+    public static String copyFile(Context context, Uri uri) throws IOException, OutOfMemoryError {
+        ParcelFileDescriptor file = context.getContentResolver().openFileDescriptor(uri, "r");
+        File dbFile = createJPGFileInOpenDirectory(context);
+
+        if (file == null) {
+            return null;
+        }
+
+        InputStream fileStream = new FileInputStream(file.getFileDescriptor());
+        OutputStream newDatabase = new FileOutputStream(dbFile);
+
+        byte[] buffer = new byte[1024];
+        int length;
+
+        while ((length = fileStream.read(buffer)) > 0) {
+            newDatabase.write(buffer, 0, length);
+        }
+
+        newDatabase.flush();
+        fileStream.close();
+        newDatabase.close();
+        return dbFile.getAbsolutePath();
     }
 
 }

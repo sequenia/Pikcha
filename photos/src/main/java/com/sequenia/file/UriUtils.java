@@ -12,14 +12,26 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 
+import com.sequenia.photo.listeners.GetPathCallback;
+
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
 
 /**
  * Методы по работе с URI
  */
 public class UriUtils {
+
+    /**
+     * Получить абсолютный путь к файлу по uri
+     *
+     * @param context  - контекст
+     * @param uri      - uri к файлу
+     * @param callback - функция обратного вызовы для обработки результата
+     */
+    public static void getPath(Context context, Uri uri, GetPathCallback callback) {
+        new GetPathAsyncTask(context, uri, callback).execute();
+    }
 
     /**
      * Получает путь к файлу по URI
@@ -28,7 +40,11 @@ public class UriUtils {
      * @param uri     - файла
      * @return - путь к файлы
      */
-    public static String getPath(Context context, Uri uri) {
+    static String getPath(Context context, Uri uri) throws IOException {
+
+        Uri contentUri = null;
+        String selection = null;
+        String[] selectionArgs = null;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
                 && DocumentsContract.isDocumentUri(context, uri)) {
@@ -44,11 +60,22 @@ public class UriUtils {
             // DownloadsProvider
             else if (isDownloadsDocument(uri)) {
 
-                final String id = DocumentsContract.getDocumentId(uri);
-                final Uri contentUri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
+                String id = DocumentsContract.getDocumentId(uri);
 
-                return getDataColumn(context, contentUri, null, null);
+                if (id.startsWith("raw:")) {
+                    return id.replaceFirst("raw:", "");
+                }
+
+                String[] contentUriPrefixesToTry = new String[]{
+                        "content://downloads/public_downloads",
+                        "content://downloads/my_downloads",
+                        "content://downloads/all_downloads"
+                };
+
+                for (String contentUriPrefix : contentUriPrefixesToTry) {
+                    contentUri = ContentUris.withAppendedId(Uri.parse(contentUriPrefix),
+                            Long.valueOf(id));
+                }
             }
             // MediaProvider
             else if (isMediaDocument(uri)) {
@@ -56,7 +83,6 @@ public class UriUtils {
                 final String[] split = docId.split(":");
                 final String type = split[0];
 
-                Uri contentUri = null;
                 if ("image".equals(type)) {
                     contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
                 } else if ("video".equals(type)) {
@@ -65,21 +91,34 @@ public class UriUtils {
                     contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
                 }
 
-                final String selection = "_id=?";
-                final String[] selectionArgs = new String[]{split[1]};
-                return getDataColumn(context, contentUri, selection, selectionArgs);
+                selection = "_id=?";
+                selectionArgs = new String[]{split[1]};
             }
         }
         // MediaStore (and general)
         else if ("content".equalsIgnoreCase(uri.getScheme())) {
-            return getDataColumn(context, uri, null, null);
+            contentUri = uri;
         }
         // File
         else if ("file".equalsIgnoreCase(uri.getScheme())) {
             return uri.getPath();
         }
 
-        return null;
+        if (contentUri != null) {
+            try {
+                String path = getDataColumn(context, contentUri, selection, selectionArgs);
+                if (path != null) {
+                    return path;
+                }
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Попробуем перекопировать в другую директорию файл
+        return FilesUtils.copyFile(context, uri);
     }
 
     /**
@@ -158,14 +197,11 @@ public class UriUtils {
      * @param data - данные, откуда достаются URI
      * @return - список URI
      */
-    public static List<Uri> getUrisFromData(Intent data) {
-        ArrayList<Uri> uris = new ArrayList<>();
-
+    public static Uri getUrisFromData(Intent data) {
         Uri uri = data.getData();
 
-        if(uri != null) {
-            uris.add(uri);
-            return uris;
+        if (uri != null) {
+            return uri;
         }
 
         ClipData clipdata = null;
@@ -178,9 +214,10 @@ public class UriUtils {
             return null;
         }
 
-        for (int i = 0; i < clipdata.getItemCount(); i++) {
-            uris.add(clipdata.getItemAt(i).getUri());
+        if (clipdata.getItemCount() > 0) {
+            return clipdata.getItemAt(0).getUri();
         }
-        return uris;
+
+        return null;
     }
 }
