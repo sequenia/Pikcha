@@ -9,12 +9,12 @@ import com.gun0912.tedpermission.TedPermission;
 /**
  * Работа с пермишинами
  */
-public class PermissionManager {
+class PermissionManager {
 
     /**
      * запрос разрешения на телефон
      */
-    public static void storagePermission(Context context, PermissionListener listener) {
+    static void storagePermission(Context context, PermissionListener listener) {
         permissions(context, listener,
                 Manifest.permission.CAMERA,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE);
