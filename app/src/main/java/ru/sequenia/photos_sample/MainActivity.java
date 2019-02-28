@@ -61,9 +61,9 @@ public class MainActivity extends AppCompatActivity implements
 
     private void showPhoto(String path) {
         // Абсолютны путь к файлу, можно отображать
-        /*Picasso.with(this)
+        Picasso.with(this)
                 .load(new File(path))
-                .into(photo);*/
+                .into(photo);
     }
 
     @Override
