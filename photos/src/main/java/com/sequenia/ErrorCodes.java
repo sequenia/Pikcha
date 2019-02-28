@@ -36,10 +36,15 @@ public interface ErrorCodes {
     int INTENT_NOT_SET = 5;
 
     /**
+     * Отказано в выдаче разрешений
+     */
+    int PERMISSION_DENIED = 6;
+
+    /**
      * Обработанное исключение
      * <p>
      * Что-то пошло не так!
      */
-    int EXCEPTION = 6;
+    int EXCEPTION = 7;
 
 }

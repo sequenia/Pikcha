@@ -23,6 +23,7 @@ import com.sequenia.photo.repository.Repository;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.sequenia.ErrorCodes.CAN_NOT_CREATE_FILE;
@@ -31,6 +32,7 @@ import static com.sequenia.ErrorCodes.FILE_PATH_NOT_FOUND;
 import static com.sequenia.ErrorCodes.INTENT_NOT_SET;
 import static com.sequenia.ErrorCodes.NO_CAMERA_ON_THE_DEVICE;
 import static com.sequenia.ErrorCodes.NO_FILE_IN_THE_SPECIFIED_PATH;
+import static com.sequenia.ErrorCodes.PERMISSION_DENIED;
 
 /**
  * Класс, осуществляющий всю работу с изображениями
@@ -429,7 +431,12 @@ public class Photos {
 
             @Override
             public void onPermissionDenied(List<String> deniedPermissions) {
+                showError(PERMISSION_DENIED);
+            }
 
+            @Override
+            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
+                showError(PERMISSION_DENIED);
             }
         };
     }
