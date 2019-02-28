@@ -7,4 +7,6 @@ public interface PermissionListener {
     void onPermissionGranted();
 
     void onPermissionDenied(List<String> deniedPermissions);
+
+    void onPermissionDenied(ArrayList<String> deniedPermissions);
 }
