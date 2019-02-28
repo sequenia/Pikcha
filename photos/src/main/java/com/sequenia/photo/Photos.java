@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.sequenia.ErrorCodes.CAN_NOT_CREATE_FILE;
 import static com.sequenia.ErrorCodes.EXCEPTION;
@@ -392,7 +393,7 @@ public class Photos {
             }
 
             @Override
-            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
+            public void onPermissionDenied(List<String> deniedPermissions) {
 
             }
         };
