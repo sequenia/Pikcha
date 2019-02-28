@@ -13,6 +13,7 @@ import com.sequenia.file.CursorUtils;
 import com.sequenia.file.FilesUtils;
 import com.sequenia.file.UriUtils;
 import com.sequenia.photo.listeners.GetPathCallback;
+import com.sequenia.photo.listeners.PhotoDifferentResultsListener;
 import com.sequenia.photo.listeners.PhotoErrorListener;
 import com.sequenia.photo.listeners.PhotoResultListener;
 import com.sequenia.photo.listeners.PhotoWaitListener;
@@ -22,7 +23,6 @@ import com.sequenia.photo.repository.Repository;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.sequenia.ErrorCodes.CAN_NOT_CREATE_FILE;
@@ -60,19 +60,30 @@ public class Photos {
      * Слушатели на ошибки
      */
     private PhotoErrorListener errorsListener;
+
     /**
      * Возвращение рузультата с камеры
      */
     private PhotoResultListener resultListener;
+
     /**
      * Показатель ожидания
      */
     private PhotoWaitListener waitListener;
+
     /**
      * Интерфейс на реализацию метода открытия intent
      */
     private StartIntentForResult intentForResult;
 
+    /**
+     * Интерфейс на реализацию метода открытия intent
+     */
+    private PhotoDifferentResultsListener differentResultsListener;
+
+    /**
+     * Хранение контекста
+     */
     private WeakReference<Context> weakReferenceContext;
 
     public Photos(Activity activity) {
@@ -93,6 +104,10 @@ public class Photos {
         if (activity instanceof StartIntentForResult) {
             intentForResult = (StartIntentForResult) activity;
         }
+
+        if (activity instanceof PhotoDifferentResultsListener) {
+            differentResultsListener = (PhotoDifferentResultsListener) activity;
+        }
     }
 
     public Photos(Fragment fragment) {
@@ -112,6 +127,10 @@ public class Photos {
 
         if (fragment instanceof StartIntentForResult) {
             intentForResult = (StartIntentForResult) fragment;
+        }
+
+        if (fragment instanceof PhotoDifferentResultsListener) {
+            differentResultsListener = (PhotoDifferentResultsListener) fragment;
         }
     }
 
@@ -255,6 +274,7 @@ public class Photos {
         // если файл существует и его размер больше 0
         if (FilesUtils.checkedFile(filePath)) {
             returnResult(filePath);
+            returnResultFromCamera(filePath);
             return;
         }
 
@@ -288,6 +308,7 @@ public class Photos {
                 if (FilesUtils.checkedFile(filePath)) {
                     setWaitState(false);
                     returnResult(filePath);
+                    returnResultFromCamera(filePath);
                     return;
                 }
 
@@ -321,6 +342,7 @@ public class Photos {
         }
 
         returnResult(filePath);
+        returnResultFromCamera(filePath);
     }
 
     /**
@@ -339,6 +361,7 @@ public class Photos {
             @Override
             public void onSuccess(String path) {
                 returnResult(path);
+                returnResultFromGallery(path);
                 setWaitState(false);
             }
 
@@ -348,6 +371,18 @@ public class Photos {
                 setWaitState(false);
             }
         });
+    }
+
+    private void returnResultFromCamera(String path) {
+        if (differentResultsListener != null) {
+            differentResultsListener.getPathFromCamera(path);
+        }
+    }
+
+    private void returnResultFromGallery(String path) {
+        if (differentResultsListener != null) {
+            differentResultsListener.getPathFromGallery(path);
+        }
     }
 
     private void returnResult(String path) {

@@ -73,7 +73,28 @@
     public void startIntentForPhoto(Intent intent, int requestCode) {
         startActivityForResult(intent, requestCode);
     }
-    
+
+Слушатель на получение результата (абсолютного пути к файлу). Резльтат возвращается для камеры и галереи в отдельных методах.
+
+    PhotoDifferentResultsListener
+
+Пример реализации интерфейса PhotoDifferentResultsListener
+
+   @Override
+   public void getPathFromGallery(String path) {
+       // Например, отобразить фотографию в ImageView
+   }
+
+   @Override
+   public void getPathFromCamera(String path) {
+       // Например, отобразить фотографию в ImageView
+   }
+
+   @Override
+   public void startIntentForPhoto(Intent intent, int requestCode) {
+       startActivityForResult(intent, requestCode);
+   }
+
 ### Открытие камеры
 
     photos.takePhotoFromCamera();
