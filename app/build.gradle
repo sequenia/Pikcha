@@ -33,4 +33,5 @@ dependencies {
     implementation 'gun0912.ted:tedpermission:2.2.0'
 
     implementation project(path: ':photos')
+    //implementation 'com.github.Ringo-Freek:Photos:v3.0.2.1'
 }
