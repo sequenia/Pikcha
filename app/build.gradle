@@ -14,10 +14,6 @@ android {
         versionName versions.versionName
     }
     buildTypes {
-        debug {
-            versionNameSuffix '-debug'
-        }
-
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -30,16 +26,12 @@ ext {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
-
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "com.android.support:appcompat-v7:$support_version"
 
     implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'gun0912.ted:tedpermission:2.2.0'
 
-    testCompile 'junit:junit:4.12'
-    compile project(path: ':photos')
+    implementation project(path: ':photos')
+    //implementation 'com.github.Ringo-Freek:Photos:v3.0.2.1'
 }
