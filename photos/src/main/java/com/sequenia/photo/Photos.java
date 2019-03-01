@@ -156,7 +156,7 @@ public class Photos {
 
         Context context = getContext();
         if (context != null) {
-            PermissionManager.storagePermission(context, getPermissionListener());
+            PermissionManager.permissionForGallery(context, getPermissionListener());
         }
     }
 
@@ -185,7 +185,7 @@ public class Photos {
         lastEvent = TAKE_PHOTO_REQUEST;
         Context context = getContext();
         if (context != null) {
-            PermissionManager.storagePermission(context, getPermissionListener());
+            PermissionManager.permissionForCamera(context, getPermissionListener());
         }
     }
 
