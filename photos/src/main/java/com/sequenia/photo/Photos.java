@@ -376,30 +376,55 @@ public class Photos {
     }
 
     private void returnResultFromCamera(String path) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (differentResultsListener != null) {
             differentResultsListener.getPathFromCamera(path);
         }
     }
 
     private void returnResultFromGallery(String path) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (differentResultsListener != null) {
             differentResultsListener.getPathFromGallery(path);
         }
     }
 
     private void returnResult(String path) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (resultListener != null) {
             resultListener.getPath(path);
         }
     }
 
     private void showError(int errorCode) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (errorsListener != null) {
             errorsListener.onError(errorCode);
         }
     }
 
     private void setWaitState(boolean state) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (waitListener != null) {
             waitListener.visibilityWait(state);
         }
