@@ -8,8 +8,8 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.sequenia.photo.Photos;
+import com.sequenia.photo.listeners.PhotoDifferentResultsListener;
 import com.sequenia.photo.listeners.PhotoErrorListener;
-import com.sequenia.photo.listeners.PhotoResultListener;
 import com.sequenia.photo.listeners.PhotoWaitListener;
 import com.squareup.picasso.Picasso;
 
@@ -19,7 +19,7 @@ import java.io.File;
  * Пример использования
  */
 public class MainActivity extends AppCompatActivity implements
-        PhotoResultListener, PhotoErrorListener, PhotoWaitListener {
+        PhotoDifferentResultsListener, PhotoErrorListener, PhotoWaitListener {
 
     private Photos photos;
     private ImageView photo;
@@ -61,23 +61,40 @@ public class MainActivity extends AppCompatActivity implements
 
     private void showPhoto(String path) {
         // Абсолютны путь к файлу, можно отображать
-        /*Picasso.with(this)
+        Picasso.with(this)
                 .load(new File(path))
-                .into(photo);*/
-    }
-
-    @Override
-    public void getPath(String path) {
-        showPhoto(path);
+                .into(photo);
     }
 
     @Override
     public void onError(int errorCode) {
-        Toast.makeText(this, "ERROR CODE " + errorCode, Toast.LENGTH_SHORT).show();
+        showMessage("ERROR CODE " + errorCode);
     }
 
     @Override
     public void visibilityWait(boolean state) {
-        Toast.makeText(this, state ? "START" : "STOP", Toast.LENGTH_SHORT).show();
+        showMessage(state ? "START" : "STOP");
+    }
+
+    /*@Override
+    public void getPath(String path) {
+        showMessage("Пришел результат с камеры или из галереи");
+        showPhoto(path);
+    }*/
+
+    @Override
+    public void getPathFromGallery(String path) {
+        showMessage("Пришел результат из галереи");
+        showPhoto(path);
+    }
+
+    @Override
+    public void getPathFromCamera(String path) {
+        showMessage("Пришел результат с камеры");
+        showPhoto(path);
+    }
+
+    private void showMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

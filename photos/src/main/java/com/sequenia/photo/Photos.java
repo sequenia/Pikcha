@@ -3,7 +3,6 @@ package com.sequenia.photo;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
@@ -13,6 +12,7 @@ import com.sequenia.file.CursorUtils;
 import com.sequenia.file.FilesUtils;
 import com.sequenia.file.UriUtils;
 import com.sequenia.photo.listeners.GetPathCallback;
+import com.sequenia.photo.listeners.PhotoDifferentResultsListener;
 import com.sequenia.photo.listeners.PhotoErrorListener;
 import com.sequenia.photo.listeners.PhotoResultListener;
 import com.sequenia.photo.listeners.PhotoWaitListener;
@@ -23,13 +23,15 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.sequenia.ErrorCodes.CAN_NOT_CREATE_FILE;
+import static com.sequenia.ErrorCodes.CONTEXT_NOT_FOUND;
 import static com.sequenia.ErrorCodes.EXCEPTION;
 import static com.sequenia.ErrorCodes.FILE_PATH_NOT_FOUND;
 import static com.sequenia.ErrorCodes.INTENT_NOT_SET;
 import static com.sequenia.ErrorCodes.NO_CAMERA_ON_THE_DEVICE;
-import static com.sequenia.ErrorCodes.NO_FILE_IN_THE_SPECIFIED_PATH;
+import static com.sequenia.ErrorCodes.PERMISSION_DENIED;
 
 /**
  * Класс, осуществляющий всю работу с изображениями
@@ -59,19 +61,30 @@ public class Photos {
      * Слушатели на ошибки
      */
     private PhotoErrorListener errorsListener;
+
     /**
      * Возвращение рузультата с камеры
      */
     private PhotoResultListener resultListener;
+
     /**
      * Показатель ожидания
      */
     private PhotoWaitListener waitListener;
+
     /**
      * Интерфейс на реализацию метода открытия intent
      */
     private StartIntentForResult intentForResult;
 
+    /**
+     * Интерфейс на реализацию метода открытия intent
+     */
+    private PhotoDifferentResultsListener differentResultsListener;
+
+    /**
+     * Хранение контекста
+     */
     private WeakReference<Context> weakReferenceContext;
 
     public Photos(Activity activity) {
@@ -91,6 +104,10 @@ public class Photos {
 
         if (activity instanceof StartIntentForResult) {
             intentForResult = (StartIntentForResult) activity;
+        }
+
+        if (activity instanceof PhotoDifferentResultsListener) {
+            differentResultsListener = (PhotoDifferentResultsListener) activity;
         }
     }
 
@@ -112,9 +129,20 @@ public class Photos {
         if (fragment instanceof StartIntentForResult) {
             intentForResult = (StartIntentForResult) fragment;
         }
+
+        if (fragment instanceof PhotoDifferentResultsListener) {
+            differentResultsListener = (PhotoDifferentResultsListener) fragment;
+        }
     }
 
-    private void setContext(Context context) {
+    /**
+     * Задание контекста
+     * метод открыт на случай, если потерялся контекст по какой-то причине,
+     * не связанной с уходом с экрана
+     *
+     * @param context - контекст
+     */
+    public void setContext(Context context) {
         weakReferenceContext = new WeakReference<>(context);
     }
 
@@ -130,12 +158,14 @@ public class Photos {
      * Выбор фотографий из галереи
      */
     public void selectedPhotoFromGallery() {
-        lastEvent = GALLERY_REQUEST;
-
         Context context = getContext();
-        if (context != null) {
-            PermissionManager.storagePermission(context, getPermissionListener());
+        if (context == null) {
+            showError(CONTEXT_NOT_FOUND);
+            return;
         }
+
+        lastEvent = GALLERY_REQUEST;
+        PermissionManager.permissionForGallery(context, getPermissionListener());
     }
 
     /**
@@ -160,11 +190,14 @@ public class Photos {
      * Сделать фото с камеры
      */
     public void takePhotoFromCamera() {
-        lastEvent = TAKE_PHOTO_REQUEST;
         Context context = getContext();
-        if (context != null) {
-            PermissionManager.storagePermission(context, getPermissionListener());
+        if (context == null) {
+            showError(CONTEXT_NOT_FOUND);
+            return;
         }
+
+        lastEvent = TAKE_PHOTO_REQUEST;
+        PermissionManager.permissionForCamera(context, getPermissionListener());
     }
 
     /**
@@ -174,6 +207,7 @@ public class Photos {
         try {
             Context context = getContext();
             if (context == null) {
+                showError(CONTEXT_NOT_FOUND);
                 return;
             }
 
@@ -254,6 +288,7 @@ public class Photos {
         // если файл существует и его размер больше 0
         if (FilesUtils.checkedFile(filePath)) {
             returnResult(filePath);
+            returnResultFromCamera(filePath);
             return;
         }
 
@@ -262,17 +297,31 @@ public class Photos {
     }
 
     /**
-     * Достать путь к выбранной фотографии (фотографиям)
+     * Достать путь к выбранной фотографии
      *
      * @param data - хранится информация
      */
     private void photoFromGallery(Intent data) {
-        Uri uri = UriUtils.getUrisFromData(data);
-        if (uri == null) {
-            showError(NO_FILE_IN_THE_SPECIFIED_PATH);
+        Context context = getContext();
+        if (context == null) {
             return;
         }
-        returnResultFromGallery(uri);
+
+        setWaitState(true);
+        UriUtils.getPathFromData(context, data, new GetPathCallback() {
+            @Override
+            public void onSuccess(String path) {
+                returnResult(path);
+                returnResultFromGallery(path);
+                setWaitState(false);
+            }
+
+            @Override
+            public void onError(int errorCode) {
+                showError(errorCode);
+                setWaitState(false);
+            }
+        });
     }
 
     /**
@@ -287,6 +336,7 @@ public class Photos {
                 if (FilesUtils.checkedFile(filePath)) {
                     setWaitState(false);
                     returnResult(filePath);
+                    returnResultFromCamera(filePath);
                     return;
                 }
 
@@ -299,7 +349,6 @@ public class Photos {
                 getPhotoPathAsync(tryCount + 1);
             }
         }, REPEAT_DELAY);
-
     }
 
     /**
@@ -320,48 +369,59 @@ public class Photos {
         }
 
         returnResult(filePath);
+        returnResultFromCamera(filePath);
     }
 
-    /**
-     * Возвращение результата из галереи
-     *
-     * @param uri - URI выбранного файла
-     */
-    private void returnResultFromGallery(Uri uri) {
+    private void returnResultFromCamera(String path) {
         Context context = getContext();
         if (context == null) {
             return;
         }
 
-        setWaitState(true);
-        UriUtils.getPath(context, uri, new GetPathCallback() {
-            @Override
-            public void onSuccess(String path) {
-                returnResult(path);
-                setWaitState(false);
-            }
+        if (differentResultsListener != null) {
+            differentResultsListener.getPathFromCamera(path);
+        }
+    }
 
-            @Override
-            public void onError(int errorCode) {
-                showError(errorCode);
-                setWaitState(false);
-            }
-        });
+    private void returnResultFromGallery(String path) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
+        if (differentResultsListener != null) {
+            differentResultsListener.getPathFromGallery(path);
+        }
     }
 
     private void returnResult(String path) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (resultListener != null) {
             resultListener.getPath(path);
         }
     }
 
     private void showError(int errorCode) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (errorsListener != null) {
             errorsListener.onError(errorCode);
         }
     }
 
     private void setWaitState(boolean state) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+
         if (waitListener != null) {
             waitListener.visibilityWait(state);
         }
@@ -392,8 +452,13 @@ public class Photos {
             }
 
             @Override
-            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
+            public void onPermissionDenied(List<String> deniedPermissions) {
+                showError(PERMISSION_DENIED);
+            }
 
+            @Override
+            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
+                showError(PERMISSION_DENIED);
             }
         };
     }
