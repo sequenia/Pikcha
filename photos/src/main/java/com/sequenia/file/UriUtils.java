@@ -17,6 +17,8 @@ import com.sequenia.photo.listeners.GetPathCallback;
 import java.io.File;
 import java.io.IOException;
 
+import static com.sequenia.ErrorCodes.NO_FILE_IN_THE_SPECIFIED_PATH;
+
 /**
  * Методы по работе с URI
  */
@@ -192,12 +194,12 @@ public class UriUtils {
     }
 
     /**
-     * Получение URIS из данных
+     * Получение URI из данных
      *
      * @param data - данные, откуда достаются URI
-     * @return - список URI
+     * @return - URI
      */
-    public static Uri getUrisFromData(Intent data) {
+    public static Uri getUriFromData(Intent data) {
         Uri uri = data.getData();
 
         if (uri != null) {
@@ -219,5 +221,31 @@ public class UriUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Получение пути к файлу из Intent
+     *
+     * @param data - данные, откуда достаются URI
+     */
+    public static void getPathFromData(Context context, Intent data,
+                                       final GetPathCallback callback) {
+        Uri uri = UriUtils.getUriFromData(data);
+        if (uri == null) {
+            callback.onError(NO_FILE_IN_THE_SPECIFIED_PATH);
+            return;
+        }
+
+        UriUtils.getPath(context, uri, new GetPathCallback() {
+            @Override
+            public void onSuccess(String path) {
+                callback.onSuccess(path);
+            }
+
+            @Override
+            public void onError(int errorCode) {
+                callback.onError(errorCode);
+            }
+        });
     }
 }

@@ -11,12 +11,12 @@ public interface ErrorCodes {
     int OUT_OF_MEMORY = 0;
 
     /**
-     * Не указан путь к фотографии
+     * Не указан путь к файлу
      */
     int FILE_PATH_NOT_FOUND = 1;
 
     /**
-     * По указанному пути не нашлось фотографии
+     * По указанному пути не нашлось файла
      */
     int NO_FILE_IN_THE_SPECIFIED_PATH = 2;
 
@@ -41,10 +41,15 @@ public interface ErrorCodes {
     int PERMISSION_DENIED = 6;
 
     /**
+     * Потерян контекст
+     */
+    int CONTEXT_NOT_FOUND = 7;
+
+    /**
      * Обработанное исключение
      * <p>
      * Что-то пошло не так!
      */
-    int EXCEPTION = 7;
+    int EXCEPTION = 8;
 
 }
