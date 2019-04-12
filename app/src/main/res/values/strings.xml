@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">PhotoManager</string>
+    <string name="app_name">Pikcha</string>
     <string name="open_camera">С камеры</string>
     <string name="open_gallery">Из галереи</string>
     <string name="open_gallery_for_multi">Из галереи (множетсвенный выбор)</string>

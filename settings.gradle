@@ -1,1 +1,1 @@
-include ':app', ':photos', ':stub'
+include ':app', ':pikcha', ':stub'

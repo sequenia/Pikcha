@@ -1,4 +1,4 @@
-package ru.sequenia.photos_sample;
+package ru.sequenia.pikcha_sample;
 
 import android.content.Intent;
 import android.os.Bundle;

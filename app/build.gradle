@@ -7,7 +7,7 @@ repositories {
 android {
     compileSdkVersion versions.compileSdk
     defaultConfig {
-        applicationId "ru.sequenia.photos_sample"
+        applicationId "ru.sequenia.pikcha_sample"
         minSdkVersion versions.minSdk
         targetSdkVersion versions.targetSdk
         versionCode versions.versionCode
@@ -32,6 +32,5 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'gun0912.ted:tedpermission:2.2.0'
 
-    implementation project(path: ':photos')
-    //implementation 'com.github.Ringo-Freek:Photos:v3.0.2.1'
+    implementation project(path: ':pikcha')
 }
