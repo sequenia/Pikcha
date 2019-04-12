@@ -1,4 +1,6 @@
-#Pikcha
+[![](https://jitpack.io/v/sequenia/Pikcha.svg)](https://jitpack.io/#sequenia/Pikcha)
+
+# Pikcha
 
 Позволяет:
 * добавлять фотографии с камеры
@@ -19,7 +21,7 @@ allprojects {
 }
 
 dependencies {
-
+    implementation 'com.github.sequenia.Pikcha:pikcha:Y.Y.Y'
     implementation 'gun0912.ted:tedpermission:X.X.X'
 }
 ```
