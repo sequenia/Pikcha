@@ -5,7 +5,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.media.ThumbnailUtils;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
