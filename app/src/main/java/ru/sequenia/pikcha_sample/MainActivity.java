@@ -2,9 +2,6 @@ package ru.sequenia.pikcha_sample;
 
 import android.content.Intent;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -16,6 +13,8 @@ import com.sequenia.photo.listeners.PhotoWaitListener;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Пример использования
