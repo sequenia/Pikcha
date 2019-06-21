@@ -22,12 +22,12 @@ android {
 }
 
 ext {
-    support_version = '27.1.1'
+    support_version = '1.0.2'
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "com.android.support:appcompat-v7:$support_version"
+    implementation "androidx.appcompat:appcompat:$support_version"
 
     implementation 'com.squareup.picasso:picasso:2.5.2'
     implementation 'gun0912.ted:tedpermission:2.2.0'
