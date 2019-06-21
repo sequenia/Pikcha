@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.provider.MediaStore;
-import android.support.v4.app.Fragment;
 
 import com.gun0912.tedpermission.PermissionListener;
 import com.sequenia.file.CursorUtils;
@@ -24,6 +23,8 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.fragment.app.Fragment;
 
 import static com.sequenia.ErrorCodes.CAN_NOT_CREATE_FILE;
 import static com.sequenia.ErrorCodes.CONTEXT_NOT_FOUND;
@@ -87,27 +88,27 @@ public class Photos {
      */
     private WeakReference<Context> weakReferenceContext;
 
-    public Photos(Activity activity) {
-        setContext(activity);
+    public Photos(Context context) {
+        setContext(context);
 
-        if (activity instanceof PhotoResultListener) {
-            resultListener = (PhotoResultListener) activity;
+        if (context instanceof PhotoResultListener) {
+            resultListener = (PhotoResultListener) context;
         }
 
-        if (activity instanceof PhotoErrorListener) {
-            errorsListener = (PhotoErrorListener) activity;
+        if (context instanceof PhotoErrorListener) {
+            errorsListener = (PhotoErrorListener) context;
         }
 
-        if (activity instanceof PhotoWaitListener) {
-            waitListener = (PhotoWaitListener) activity;
+        if (context instanceof PhotoWaitListener) {
+            waitListener = (PhotoWaitListener) context;
         }
 
-        if (activity instanceof StartIntentForResult) {
-            intentForResult = (StartIntentForResult) activity;
+        if (context instanceof StartIntentForResult) {
+            intentForResult = (StartIntentForResult) context;
         }
 
-        if (activity instanceof PhotoDifferentResultsListener) {
-            differentResultsListener = (PhotoDifferentResultsListener) activity;
+        if (context instanceof PhotoDifferentResultsListener) {
+            differentResultsListener = (PhotoDifferentResultsListener) context;
         }
     }
 

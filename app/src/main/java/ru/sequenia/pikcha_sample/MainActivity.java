@@ -2,7 +2,6 @@ package ru.sequenia.pikcha_sample;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -14,6 +13,8 @@ import com.sequenia.photo.listeners.PhotoWaitListener;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Пример использования
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void showPhoto(String path) {
         // Абсолютны путь к файлу, можно отображать
-        Picasso.with(this)
+        Picasso.get()
                 .load(new File(path))
                 .into(photo);
     }
