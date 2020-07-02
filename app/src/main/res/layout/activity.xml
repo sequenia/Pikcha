@@ -1,27 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/activity_main"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:padding="@dimen/activity_vertical_margin">
 
     <ImageView
         android:id="@+id/photo"
         android:layout_width="match_parent"
-        android:layout_weight="1"
-        android:layout_height="0dp" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <Button
         android:id="@+id/open_camera"
-        android:text="@string/open_camera"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:text="@string/open_camera" />
 
     <Button
         android:id="@+id/open_gallery"
-        android:text="@string/open_gallery"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:text="@string/open_gallery" />
+
+    <Button
+        android:id="@+id/open_chooser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/open_chooser" />
 
 </LinearLayout>
