@@ -26,6 +26,15 @@ class PermissionManager {
         permissions(context, listener, Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 
+    static void permissionForChooser(Context context, PermissionListener listener) {
+        permissions(
+                context,
+                listener,
+                Manifest.permission.CAMERA,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+        );
+    }
+
     private static void permissions(Context context, PermissionListener permissionlistener,
                                     String... permissions) {
         TedPermission.with(context)
