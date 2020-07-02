@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.provider.MediaStore;
+
+import androidx.fragment.app.Fragment;
 
 import com.gun0912.tedpermission.PermissionListener;
 import com.sequenia.file.CursorUtils;
@@ -24,8 +27,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.fragment.app.Fragment;
-
 import static com.sequenia.ErrorCodes.CAN_NOT_CREATE_FILE;
 import static com.sequenia.ErrorCodes.CONTEXT_NOT_FOUND;
 import static com.sequenia.ErrorCodes.EXCEPTION;
@@ -44,6 +45,7 @@ public class Photos {
 
     private static final int GALLERY_REQUEST = 10101;
     private static final int TAKE_PHOTO_REQUEST = 20202;
+    private static final int SELECT_METHOD_OF_ADDING_PHOTO_REQUEST = 30303;
 
     private static final int COUNT_REPEAT = 10;
     private static final int REPEAT_DELAY = 1000;
@@ -170,24 +172,6 @@ public class Photos {
     }
 
     /**
-     * Выбор фотографий из галереи
-     */
-    private void openGallery() {
-        if (intentForResult == null) {
-            showError(INTENT_NOT_SET);
-            return;
-        }
-
-        Intent intent = new Intent();
-        intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
-        intentForResult.startIntentForPhoto(
-                Intent.createChooser(intent, getText(R.string.add_photo)),
-                GALLERY_REQUEST
-        );
-    }
-
-    /**
      * Сделать фото с камеры
      */
     public void takePhotoFromCamera() {
@@ -202,46 +186,17 @@ public class Photos {
     }
 
     /**
-     * Сделать фото с камеры
+     * Выбрать способ добавления фото
      */
-    private void openCamera() {
-        try {
-            Context context = getContext();
-            if (context == null) {
-                showError(CONTEXT_NOT_FOUND);
-                return;
-            }
-
-            if (intentForResult == null) {
-                showError(INTENT_NOT_SET);
-                return;
-            }
-
-            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (takePictureIntent.resolveActivity(context.getPackageManager()) == null) {
-                showError(NO_CAMERA_ON_THE_DEVICE);
-                return;
-            }
-
-            File image = FilesUtils.createJPGFileInOpenDirectory(context);
-
-            if (image == null) {
-                showError(CAN_NOT_CREATE_FILE);
-                return;
-            }
-
-            filePath = image.getAbsolutePath();
-            // Сохраняем, чтобы восстановить, если экран потеряется
-            Repository.savePath(context, filePath);
-
-            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                    UriUtils.getFileUri(context, image));
-            intentForResult.startIntentForPhoto(takePictureIntent, TAKE_PHOTO_REQUEST);
-
-        } catch (IOException exc) {
-            showError(EXCEPTION);
+    public void selectMethodOfAddingPhoto() {
+        Context context = getContext();
+        if (context == null) {
+            showError(CONTEXT_NOT_FOUND);
+            return;
         }
+
+        lastEvent = SELECT_METHOD_OF_ADDING_PHOTO_REQUEST;
+        PermissionManager.permissionForChooser(context, getPermissionListener());
     }
 
     /**
@@ -262,24 +217,121 @@ public class Photos {
             case TAKE_PHOTO_REQUEST:
                 photoFromCamera();
                 break;
+            case SELECT_METHOD_OF_ADDING_PHOTO_REQUEST:
+                addedPhotoFromUnknownSource(data);
+                break;
         }
+    }
+
+    /**
+     * Показать выбор для добавления фотографий
+     */
+    private void showChooserOfAddingPhoto() {
+        if (intentForResult == null) {
+            showError(INTENT_NOT_SET);
+            return;
+        }
+
+        Intent cameraIntent = getCameraIntent();
+        Intent galleryIntent = getGalleryIntent();
+
+        if (cameraIntent == null) {
+            return;
+        }
+
+        Intent chooserIntent = Intent.createChooser(galleryIntent, null);
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Parcelable[]{cameraIntent});
+        intentForResult.startIntentForPhoto(chooserIntent, SELECT_METHOD_OF_ADDING_PHOTO_REQUEST);
+    }
+
+    /**
+     * Сделать фото с камеры
+     */
+    private void openCamera() {
+        if (intentForResult == null) {
+            showError(INTENT_NOT_SET);
+            return;
+        }
+
+        Intent takePictureIntent = getCameraIntent();
+        intentForResult.startIntentForPhoto(takePictureIntent, TAKE_PHOTO_REQUEST);
+    }
+
+    /**
+     * Выбор фотографий из галереи
+     */
+    private void openGallery() {
+        if (intentForResult == null) {
+            showError(INTENT_NOT_SET);
+            return;
+        }
+
+        Intent intent = getGalleryIntent();
+        intentForResult.startIntentForPhoto(
+                Intent.createChooser(intent, getText(R.string.add_photo)),
+                GALLERY_REQUEST
+        );
+    }
+
+    private Intent getCameraIntent() {
+        try {
+            Context context = getContext();
+            if (context == null) {
+                showError(CONTEXT_NOT_FOUND);
+                return null;
+            }
+
+            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (takePictureIntent.resolveActivity(context.getPackageManager()) == null) {
+                showError(NO_CAMERA_ON_THE_DEVICE);
+                return null;
+            }
+
+            File image = FilesUtils.createJPGFileInOpenDirectory(context);
+
+            if (image == null) {
+                showError(CAN_NOT_CREATE_FILE);
+                return null;
+            }
+
+            filePath = image.getAbsolutePath();
+            // Сохраняем, чтобы восстановить, если экран потеряется
+            Repository.savePath(context, filePath);
+
+            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                    UriUtils.getFileUri(context, image));
+
+            return takePictureIntent;
+
+        } catch (IOException exc) {
+            showError(EXCEPTION);
+        }
+
+        return null;
+    }
+
+    private Intent getGalleryIntent() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        return intent;
+    }
+
+    private void addedPhotoFromUnknownSource(Intent data) {
+        if (data == null) {
+            photoFromCamera();
+            return;
+        }
+
+        photoFromGallery(data);
     }
 
     /**
      * Достать путь к уже сделанной фотографии
      */
     private void photoFromCamera() {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
-
-        // возможно, экран пересоздался
-        if (filePath == null) {
-            filePath = Repository.getPath(context);
-            // подчищаем все, что хранится во временном хранилище
-            Repository.removePath(context);
-        }
+        String filePath = getFilePath();
 
         if (filePath == null) {
             showError(FILE_PATH_NOT_FOUND);
@@ -295,6 +347,22 @@ public class Photos {
 
         setWaitState(true);
         getPhotoPathAsync(0);
+    }
+
+    private String getFilePath() {
+        Context context = getContext();
+        if (context == null) {
+            return null;
+        }
+
+        // возможно, экран пересоздался
+        if (filePath == null) {
+            filePath = Repository.getPath(context);
+            // подчищаем все, что хранится во временном хранилище
+            Repository.removePath(context);
+        }
+
+        return filePath;
     }
 
     /**
@@ -448,6 +516,9 @@ public class Photos {
                         break;
                     case TAKE_PHOTO_REQUEST:
                         openCamera();
+                        break;
+                    case SELECT_METHOD_OF_ADDING_PHOTO_REQUEST:
+                        showChooserOfAddingPhoto();
                         break;
                 }
             }

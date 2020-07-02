@@ -6,6 +6,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.sequenia.photo.Photos;
 import com.sequenia.photo.listeners.PhotoDifferentResultsListener;
 import com.sequenia.photo.listeners.PhotoErrorListener;
@@ -13,8 +15,6 @@ import com.sequenia.photo.listeners.PhotoWaitListener;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Пример использования
@@ -45,6 +45,13 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
                 photos.selectedPhotoFromGallery();
+            }
+        });
+
+        findViewById(R.id.open_chooser).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                photos.selectMethodOfAddingPhoto();
             }
         });
     }
