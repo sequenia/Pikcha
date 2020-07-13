@@ -6,6 +6,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+
 import androidx.annotation.NonNull;
 
 import java.io.File;
@@ -32,32 +33,12 @@ public class FilesUtils {
     private final static String EXP_JPEG = "jpeg";
 
     /**
-     * Создание файла JPEG в открытой директории с дефолтовым именем
-     *
-     * @return - файл с дефолтовым именем
-     */
-    public static File createJPGFileInOpenDirectory(Context context) throws IOException {
-        return createFile(createOpenDirectory(context), getDefaultFileName(EXP_JPEG), EXP_JPEG);
-    }
-
-    /**
      * Создание файла JPEG в закрытой директории с дефолтовым именем
      *
      * @return - файл с дефолтовым именем
      */
-    public static File createJPGFileInCloseDirectory(Context context) throws IOException {
-        return createFile(createCloseDirectory(context), getDefaultFileName(EXP_JPEG), EXP_JPEG);
-    }
-
-    /**
-     * Создание файла JPEG в открытой директории с заданным именем
-     *
-     * @param name - имя файла
-     * @return - файл с дефолтовым именем
-     */
-    public static File createJPGFileInOpenDirectory(Context context, String name)
-            throws IOException {
-        return createFile(createOpenDirectory(context), name, EXP_JPEG);
+    public static File createJPGFileInAppSpecificDirectory(Context context) throws IOException {
+        return createFileInAppSpecificDirectory(context, EXP_JPEG);
     }
 
     /**
@@ -66,18 +47,9 @@ public class FilesUtils {
      * @param name - имя файла
      * @return - файл с дефолтовым именем
      */
-    public static File createJPGFileInCloseDirectory(Context context, String name)
+    public static File createJPGFileInAppSpecificDirectory(Context context, String name)
             throws IOException {
-        return createFile(createCloseDirectory(context), name, EXP_JPEG);
-    }
-
-    /**
-     * Создание файла JPEG в открытой директории с дефолтовым именем
-     *
-     * @return - файл с дефолтовым именем
-     */
-    public static File createPNGFileInOpenDirectory(Context context) throws IOException {
-        return createFile(createOpenDirectory(context), getDefaultFileName(EXP_PNG), EXP_PNG);
+        return createFile(createAppSpecificDirectory(context), name, EXP_JPEG);
     }
 
     /**
@@ -85,19 +57,8 @@ public class FilesUtils {
      *
      * @return - файл с дефолтовым именем
      */
-    public static File createPNGFileInCloseDirectory(Context context) throws IOException {
-        return createFile(createCloseDirectory(context), getDefaultFileName(EXP_PNG), EXP_PNG);
-    }
-
-    /**
-     * Создание файла JPEG в открытой директории с заданным именем
-     *
-     * @param name - имя файла
-     * @return - файл с дефолтовым именем
-     */
-    public static File createPNGFileInOpenDirectory(Context context, String name)
-            throws IOException {
-        return createFile(createOpenDirectory(context), name, EXP_PNG);
+    public static File createPNGFileInAppSpecificDirectory(Context context) throws IOException {
+        return createFileInAppSpecificDirectory(context, EXP_PNG);
     }
 
     /**
@@ -106,9 +67,9 @@ public class FilesUtils {
      * @param name - имя файла
      * @return - файл с дефолтовым именем
      */
-    public static File createPNGFileInCloseDirectory(Context context, String name)
+    public static File createPNGFileInAppSpecificDirectory(Context context, String name)
             throws IOException {
-        return createFile(createCloseDirectory(context), name, EXP_PNG);
+        return createFile(createAppSpecificDirectory(context), name, EXP_PNG);
     }
 
     /**
@@ -178,25 +139,79 @@ public class FilesUtils {
     }
 
     /**
-     * Создание закрытой директории (доступ только для приложения)
+     * Проверка файла на существование и
+     * корректность информации
      *
-     * @return - директория
+     * @param path - путь к файлу
+     * @return - true - файл существует и информация в нем корректна
      */
-    private static File createCloseDirectory(Context context) {
-        return isExternalStorageWritable()
-                ? context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-                : context.getFilesDir();
+    public static boolean checkedFile(String path) {
+        if (path == null) {
+            return false;
+        }
+
+        File file = new File(path);
+        return file.exists() && file.length() > 0;
     }
 
     /**
-     * Создание открытой директории(файлы отображаются в проводниках)
+     * Получение поворота файла
+     *
+     * @param path - путь к файлу
+     * @return - поворот файла
+     */
+    public int getFileOrientation(String path) throws IOException {
+        ExifInterface exif = new ExifInterface(path);
+        return exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_UNDEFINED);
+    }
+
+    /**
+     * Копирует файл в новой директории
+     *
+     * @param context - контекст
+     * @param uri     - ури на файл
+     * @return - путь к файлу
+     */
+    public static String copyFile(Context context, Uri uri) throws IOException, OutOfMemoryError {
+        ParcelFileDescriptor file = context
+                .getContentResolver()
+                .openFileDescriptor(uri, "r");
+
+        File dbFile = createJPGFileInAppSpecificDirectory(context);
+
+        if (file == null) {
+            return null;
+        }
+
+        InputStream fileStream = new FileInputStream(file.getFileDescriptor());
+        OutputStream newDatabase = new FileOutputStream(dbFile);
+
+        byte[] buffer = new byte[1024];
+        int length;
+
+        while ((length = fileStream.read(buffer)) > 0) {
+            newDatabase.write(buffer, 0, length);
+        }
+
+        newDatabase.flush();
+        fileStream.close();
+        newDatabase.close();
+        return dbFile.getAbsolutePath();
+    }
+
+    /**
+     * С 29 и выше апи другие приложения не смогут считать эти файлы
+     * При удаление приложения, удаляются и файлы
+     * <p>
+     * Не нужены разрешения для записи и чтения
      *
      * @return - директория
      */
-    private static File createOpenDirectory(Context context) {
+    private static File createAppSpecificDirectory(Context context) {
         return isExternalStorageWritable()
-                ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                : context.getDir(Environment.DIRECTORY_PICTURES, Context.MODE_PRIVATE);
+                ? context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                : context.getFilesDir();
     }
 
     /**
@@ -239,7 +254,7 @@ public class FilesUtils {
     private static String saveBitmap(@NonNull Context context, @NonNull Bitmap base,
                                      @NonNull String name, @NonNull String exp,
                                      int compress) throws IOException {
-        File file = createFile(createOpenDirectory(context), name, exp);
+        File file = createFile(createAppSpecificDirectory(context), name, exp);
 
         if (file == null) {
             return null;
@@ -270,63 +285,8 @@ public class FilesUtils {
         return Environment.MEDIA_MOUNTED.equals(state);
     }
 
-    /**
-     * Проверка файла на существование и
-     * корректность информации
-     *
-     * @param path - путь к файлу
-     * @return - true - файл существует и информация в нем корректна
-     */
-    public static boolean checkedFile(String path) {
-        if (path == null) {
-            return false;
-        }
-
-        File file = new File(path);
-        return file.exists() && file.length() > 0;
+    private static File createFileInAppSpecificDirectory(Context context, String exp)
+            throws IOException {
+        return createFile(createAppSpecificDirectory(context), getDefaultFileName(exp), exp);
     }
-
-    /**
-     * Получение поворота файла
-     *
-     * @param path - путь к файлу
-     * @return - поворот файла
-     */
-    public int getFileOrientation(String path) throws IOException {
-        ExifInterface exif = new ExifInterface(path);
-        return exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_UNDEFINED);
-    }
-
-    /**
-     * Копирует файл в новой директории
-     *
-     * @param context - контекст
-     * @param uri     - ури на файл
-     * @return - путь к файлу
-     */
-    public static String copyFile(Context context, Uri uri) throws IOException, OutOfMemoryError {
-        ParcelFileDescriptor file = context.getContentResolver().openFileDescriptor(uri, "r");
-        File dbFile = createJPGFileInOpenDirectory(context);
-
-        if (file == null) {
-            return null;
-        }
-
-        InputStream fileStream = new FileInputStream(file.getFileDescriptor());
-        OutputStream newDatabase = new FileOutputStream(dbFile);
-
-        byte[] buffer = new byte[1024];
-        int length;
-
-        while ((length = fileStream.read(buffer)) > 0) {
-            newDatabase.write(buffer, 0, length);
-        }
-
-        newDatabase.flush();
-        fileStream.close();
-        newDatabase.close();
-        return dbFile.getAbsolutePath();
-    }
-
 }
