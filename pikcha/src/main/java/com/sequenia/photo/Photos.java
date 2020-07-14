@@ -3,17 +3,18 @@ package com.sequenia.photo;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Parcelable;
 import android.provider.MediaStore;
 
 import androidx.fragment.app.Fragment;
 
-import com.gun0912.tedpermission.PermissionListener;
-import com.sequenia.file.CursorUtils;
+import com.sequenia.ErrorCode;
 import com.sequenia.file.FilesUtils;
 import com.sequenia.file.UriUtils;
-import com.sequenia.photo.listeners.GetPathCallback;
+import com.sequenia.photo.PermissionChecker.PermissionDeniedListener;
+import com.sequenia.photo.PermissionChecker.PermissionGrantedListener;
 import com.sequenia.photo.listeners.PhotoDifferentResultsListener;
 import com.sequenia.photo.listeners.PhotoErrorListener;
 import com.sequenia.photo.listeners.PhotoResultListener;
@@ -24,16 +25,16 @@ import com.sequenia.photo.repository.Repository;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 
-import static com.sequenia.ErrorCodes.CAN_NOT_CREATE_FILE;
-import static com.sequenia.ErrorCodes.CONTEXT_NOT_FOUND;
-import static com.sequenia.ErrorCodes.EXCEPTION;
-import static com.sequenia.ErrorCodes.FILE_PATH_NOT_FOUND;
-import static com.sequenia.ErrorCodes.INTENT_NOT_SET;
-import static com.sequenia.ErrorCodes.NO_CAMERA_ON_THE_DEVICE;
-import static com.sequenia.ErrorCodes.PERMISSION_DENIED;
+import static com.sequenia.ErrorCode.CAN_NOT_CREATE_FILE;
+import static com.sequenia.ErrorCode.CONTEXT_NOT_FOUND;
+import static com.sequenia.ErrorCode.EXCEPTION;
+import static com.sequenia.ErrorCode.FILE_NOT_FOUND;
+import static com.sequenia.ErrorCode.FILE_PATH_NOT_FOUND;
+import static com.sequenia.ErrorCode.INTENT_NOT_SET;
+import static com.sequenia.ErrorCode.NO_CAMERA_ON_THE_DEVICE;
+import static com.sequenia.ErrorCode.PERMISSION_DENIED;
 
 /**
  * Класс, осуществляющий всю работу с изображениями
@@ -58,7 +59,7 @@ public class Photos {
     /**
      * Абсолютный путь к файлу при добавление фотографии с камеры
      */
-    private String filePath;
+    private Uri filePathFromCamera;
 
     /**
      * Слушатели на ошибки
@@ -168,7 +169,12 @@ public class Photos {
         }
 
         lastEvent = GALLERY_REQUEST;
-        PermissionManager.permissionForGallery(context, getPermissionListener());
+
+        PhotoPermissionChecker.permissionForGallery(
+                context,
+                getPermissionGrantedListener(),
+                getPermissionDeniedListener()
+        );
     }
 
     /**
@@ -182,7 +188,12 @@ public class Photos {
         }
 
         lastEvent = TAKE_PHOTO_REQUEST;
-        PermissionManager.permissionForCamera(context, getPermissionListener());
+
+        PhotoPermissionChecker.permissionForCamera(
+                context,
+                getPermissionGrantedListener(),
+                getPermissionDeniedListener()
+        );
     }
 
     /**
@@ -196,7 +207,11 @@ public class Photos {
         }
 
         lastEvent = SELECT_METHOD_OF_ADDING_PHOTO_REQUEST;
-        PermissionManager.permissionForChooser(context, getPermissionListener());
+        PhotoPermissionChecker.permissionForChooser(
+                context,
+                getPermissionGrantedListener(),
+                getPermissionDeniedListener()
+        );
     }
 
     /**
@@ -253,8 +268,13 @@ public class Photos {
             return;
         }
 
-        Intent takePictureIntent = getCameraIntent();
-        intentForResult.startIntentForPhoto(takePictureIntent, TAKE_PHOTO_REQUEST);
+        Intent cameraIntent = getCameraIntent();
+
+        if (cameraIntent == null) {
+            return;
+        }
+
+        intentForResult.startIntentForPhoto(cameraIntent, TAKE_PHOTO_REQUEST);
     }
 
     /**
@@ -294,13 +314,12 @@ public class Photos {
                 return null;
             }
 
-            filePath = image.getAbsolutePath();
+            filePathFromCamera = UriUtils.getFileUri(context, image);
             // Сохраняем, чтобы восстановить, если экран потеряется
-            Repository.savePath(context, filePath);
+            Repository.savePath(context, filePathFromCamera.toString());
 
             takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                    UriUtils.getFileUri(context, image));
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, filePathFromCamera);
 
             return takePictureIntent;
 
@@ -314,6 +333,7 @@ public class Photos {
     private Intent getGalleryIntent() {
         Intent intent = new Intent();
         intent.setType("image/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setAction(Intent.ACTION_GET_CONTENT);
         return intent;
     }
@@ -331,17 +351,9 @@ public class Photos {
      * Достать путь к уже сделанной фотографии
      */
     private void photoFromCamera() {
-        String filePath = getFilePath();
+        boolean waitMore = returnResultIfPhotoAvailable();
 
-        if (filePath == null) {
-            showError(FILE_PATH_NOT_FOUND);
-            return;
-        }
-
-        // если файл существует и его размер больше 0
-        if (FilesUtils.checkedFile(filePath)) {
-            returnResult(filePath);
-            returnResultFromCamera(filePath);
+        if (!waitMore) {
             return;
         }
 
@@ -349,20 +361,21 @@ public class Photos {
         getPhotoPathAsync(0);
     }
 
-    private String getFilePath() {
+    private Uri getFilePathFromCamera() {
         Context context = getContext();
         if (context == null) {
+            showError(CONTEXT_NOT_FOUND);
             return null;
         }
 
         // возможно, экран пересоздался
-        if (filePath == null) {
-            filePath = Repository.getPath(context);
+        if (filePathFromCamera == null) {
+            filePathFromCamera = Uri.parse(Repository.getPath(context));
             // подчищаем все, что хранится во временном хранилище
             Repository.removePath(context);
         }
 
-        return filePath;
+        return filePathFromCamera;
     }
 
     /**
@@ -371,26 +384,15 @@ public class Photos {
      * @param data - хранится информация
      */
     private void photoFromGallery(Intent data) {
-        Context context = getContext();
-        if (context == null) {
+        Uri uri = UriUtils.getUriFromData(data);
+
+        if (uri == null) {
+            showError(FILE_PATH_NOT_FOUND);
             return;
         }
 
-        setWaitState(true);
-        UriUtils.getPathFromData(context, data, new GetPathCallback() {
-            @Override
-            public void onSuccess(String path) {
-                returnResult(path);
-                returnResultFromGallery(path);
-                setWaitState(false);
-            }
-
-            @Override
-            public void onError(int errorCode) {
-                showError(errorCode);
-                setWaitState(false);
-            }
-        });
+        returnResult(uri);
+        returnResultFromGallery(uri);
     }
 
     /**
@@ -402,16 +404,15 @@ public class Photos {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (FilesUtils.checkedFile(filePath)) {
-                    setWaitState(false);
-                    returnResult(filePath);
-                    returnResultFromCamera(filePath);
+                boolean waitMore = returnResultIfPhotoAvailable();
+
+                if (!waitMore) {
                     return;
                 }
 
                 if (tryCount >= COUNT_REPEAT) {
                     setWaitState(false);
-                    getPathLastPhoto();
+                    showError(FILE_NOT_FOUND);
                     return;
                 }
 
@@ -420,77 +421,64 @@ public class Photos {
         }, REPEAT_DELAY);
     }
 
-    /**
-     * Попытка достать последнюю
-     * фотографию из галлереи
-     */
-    private void getPathLastPhoto() {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
+    private boolean returnResultIfPhotoAvailable() {
 
-        filePath = CursorUtils.getLastImageFile(context);
+        Uri filePath = getFilePathFromCamera();
 
         if (filePath == null) {
             showError(FILE_PATH_NOT_FOUND);
-            return;
+            return false;
         }
 
-        returnResult(filePath);
-        returnResultFromCamera(filePath);
-    }
-
-    private void returnResultFromCamera(String path) {
         Context context = getContext();
         if (context == null) {
-            return;
+            showError(CONTEXT_NOT_FOUND);
+            return false;
         }
 
+        try {
+            if (FilesUtils.fileExists(context, filePath)) {
+                setWaitState(false);
+                returnResult(filePath);
+                returnResultFromCamera(filePath);
+                return false;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+
+            showError(FILE_NOT_FOUND);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private void returnResultFromCamera(Uri uri) {
         if (differentResultsListener != null) {
-            differentResultsListener.getPathFromCamera(path);
+            differentResultsListener.getPathFromCamera(uri);
         }
     }
 
-    private void returnResultFromGallery(String path) {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
-
+    private void returnResultFromGallery(Uri uri) {
         if (differentResultsListener != null) {
-            differentResultsListener.getPathFromGallery(path);
+            differentResultsListener.getPathFileFromGallery(uri);
         }
     }
 
-    private void returnResult(String path) {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
-
+    private void returnResult(Uri uri) {
         if (resultListener != null) {
-            resultListener.getPath(path);
+            resultListener.getFilePath(uri);
         }
     }
 
-    private void showError(int errorCode) {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
-
+    private void showError(ErrorCode errorCode) {
         if (errorsListener != null) {
             errorsListener.onError(errorCode);
         }
     }
 
     private void setWaitState(boolean state) {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
-
         if (waitListener != null) {
             waitListener.visibilityWait(state);
         }
@@ -498,15 +486,20 @@ public class Photos {
 
     private String getText(int res) {
         Context context = getContext();
-        if (context == null) {
-            return null;
-        }
-
-        return context.getString(res);
+        return context != null ? context.getString(res) : null;
     }
 
-    private PermissionListener getPermissionListener() {
-        return new PermissionListener() {
+    private PermissionDeniedListener getPermissionDeniedListener() {
+        return new PermissionDeniedListener() {
+            @Override
+            public void onPermissionDenied(List<String> deniedPermissions) {
+                showError(PERMISSION_DENIED);
+            }
+        };
+    }
+
+    private PermissionGrantedListener getPermissionGrantedListener() {
+        return new PermissionGrantedListener() {
             @Override
             public void onPermissionGranted() {
                 // выдали разрешение, повторяем попытку запуска
@@ -521,16 +514,6 @@ public class Photos {
                         showChooserOfAddingPhoto();
                         break;
                 }
-            }
-
-            @Override
-            public void onPermissionDenied(List<String> deniedPermissions) {
-                showError(PERMISSION_DENIED);
-            }
-
-            @Override
-            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
-                showError(PERMISSION_DENIED);
             }
         };
     }
