@@ -1,9 +1,10 @@
-package com.sequenia.photo;
+package com.sequenia.photo.sources.permissions;
 
 import android.content.Context;
 
 import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
+import com.sequenia.photo.R;
 
 import java.util.List;
 
@@ -79,11 +80,4 @@ class PermissionChecker {
                 .check();
     }
 
-    interface PermissionDeniedListener {
-        void onPermissionDenied(List<String> deniedPermissions);
-    }
-
-    interface PermissionGrantedListener {
-        void onPermissionGranted();
-    }
 }

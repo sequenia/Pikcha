@@ -1,10 +1,7 @@
-package com.sequenia.photo;
+package com.sequenia.photo.sources.permissions;
 
 import android.Manifest;
 import android.content.Context;
-
-import com.sequenia.photo.PermissionChecker.PermissionDeniedListener;
-import com.sequenia.photo.PermissionChecker.PermissionGrantedListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,15 +9,29 @@ import java.util.List;
 /**
  * Проверка разрешений для работы библиотеки
  */
-class PhotoPermissionChecker {
+public class PhotoPermissionChecker {
+
+    private Context context;
+
+    private PermissionGrantedListener permissionGrantedListener;
+    private PermissionDeniedListener permissionDeniedListener;
+
+    public PhotoPermissionChecker(Context context) {
+        this.context = context;
+    }
+
+    public void setPermissionGrantedListener(PermissionGrantedListener listener) {
+        this.permissionGrantedListener = listener;
+    }
+
+    public void setPermissionDeniedListener(PermissionDeniedListener listener) {
+        this.permissionDeniedListener = listener;
+    }
 
     /**
      * Запрос разрешений для камеры
      */
-    static void permissionForCamera(Context context,
-                                    PermissionGrantedListener permissionGrantedListener,
-                                    PermissionDeniedListener permissionDeniedListener) {
-
+    public void permissionForCamera() {
         List<String> permissions = new ArrayList<>();
         permissions.add(Manifest.permission.CAMERA);
 
@@ -39,10 +50,7 @@ class PhotoPermissionChecker {
     /**
      * Запрос разрешений для галереи
      */
-    static void permissionForGallery(Context context,
-                                     PermissionGrantedListener permissionGrantedListener,
-                                     PermissionDeniedListener permissionDeniedListener) {
-
+    public void permissionForGallery() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             permissionGrantedListener.onPermissionGranted();
             return;
@@ -54,10 +62,7 @@ class PhotoPermissionChecker {
                 .checkPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 
-    static void permissionForChooser(Context context,
-                                     PermissionGrantedListener permissionGrantedListener,
-                                     PermissionDeniedListener permissionDeniedListener) {
-
-        permissionForCamera(context, permissionGrantedListener, permissionDeniedListener);
+    public void permissionForChooser() {
+        permissionForCamera();
     }
 }

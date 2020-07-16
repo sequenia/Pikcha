@@ -37,21 +37,21 @@ public class MainActivity extends AppCompatActivity implements
         findViewById(R.id.open_camera).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                photos.takePhotoFromCamera();
+                photos.takePhotoFromCamera(MainActivity.this);
             }
         });
 
         findViewById(R.id.open_gallery).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                photos.selectedPhotoFromGallery();
+                photos.selectedPhotoFromGallery(MainActivity.this);
             }
         });
 
         findViewById(R.id.open_chooser).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                photos.selectMethodOfAddingPhoto();
+                photos.selectMethodOfAddingPhoto(MainActivity.this);
             }
         });
     }
