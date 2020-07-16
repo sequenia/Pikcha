@@ -307,7 +307,7 @@ public class Photos {
                 return null;
             }
 
-            File image = FilesUtils.createJPGFileInAppSpecificDirectory(context);
+            File image = FilesUtils.createJPGFile(context);
 
             if (image == null) {
                 showError(CAN_NOT_CREATE_FILE);
