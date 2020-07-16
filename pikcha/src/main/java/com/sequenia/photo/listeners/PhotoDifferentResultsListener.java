@@ -1,5 +1,7 @@
 package com.sequenia.photo.listeners;
 
+import android.net.Uri;
+
 /**
  * Слушатель на получение результата (абсолютного пути к файлу)
  * - с камеры
@@ -8,16 +10,16 @@ package com.sequenia.photo.listeners;
 public interface PhotoDifferentResultsListener extends StartIntentForResult {
 
     /**
-     * Возвращение результата из галереи
+     * Получить путь к файлу из галереи
      *
-     * @param path - пути к фотография
+     * @param uri пути к фотография
      */
-    void getPathFromGallery(String path);
+    void getPathFileFromGallery(Uri uri);
 
     /**
-     * Возвращение результата с камеры
+     * Получить путь к файлу с камеры
      *
-     * @param path - пути к фотография
+     * @param uri пути к фотография
      */
-    void getPathFromCamera(String path);
+    void getPathFromCamera(Uri uri);
 }

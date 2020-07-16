@@ -3,53 +3,48 @@ package com.sequenia;
 /**
  * Коды обработанных ошибок
  */
-public interface ErrorCodes {
-
-    /**
-     * Не хватает памяти для выполнения операции, отведенной на приложение
-     */
-    int OUT_OF_MEMORY = 0;
+public enum ErrorCode {
 
     /**
      * Не указан путь к файлу
      */
-    int FILE_PATH_NOT_FOUND = 1;
-
-    /**
-     * По указанному пути не нашлось файла
-     */
-    int NO_FILE_IN_THE_SPECIFIED_PATH = 2;
+    FILE_PATH_NOT_FOUND,
 
     /**
      * На устройстве не удалось найти камеру
      */
-    int NO_CAMERA_ON_THE_DEVICE = 3;
+    NO_CAMERA_ON_THE_DEVICE,
 
     /**
      * Не удалось создать файл
      */
-    int CAN_NOT_CREATE_FILE = 4;
+    CAN_NOT_CREATE_FILE,
 
     /**
      * Не задан intent для обработки результата
      */
-    int INTENT_NOT_SET = 5;
+    INTENT_NOT_SET,
 
     /**
      * Отказано в выдаче разрешений
      */
-    int PERMISSION_DENIED = 6;
+    PERMISSION_DENIED,
 
     /**
      * Потерян контекст
      */
-    int CONTEXT_NOT_FOUND = 7;
+    CONTEXT_NOT_FOUND,
+
+    /**
+     * По указаному пути не найден файл
+     */
+    FILE_NOT_FOUND,
 
     /**
      * Обработанное исключение
      * <p>
      * Что-то пошло не так!
      */
-    int EXCEPTION = 8;
+    EXCEPTION
 
 }
