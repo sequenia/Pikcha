@@ -1,6 +1,7 @@
 package ru.sequenia.pikcha_sample;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -8,13 +9,12 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
+import com.sequenia.ErrorCode;
 import com.sequenia.photo.Photos;
 import com.sequenia.photo.listeners.PhotoDifferentResultsListener;
 import com.sequenia.photo.listeners.PhotoErrorListener;
 import com.sequenia.photo.listeners.PhotoWaitListener;
-import com.squareup.picasso.Picasso;
-
-import java.io.File;
 
 /**
  * Пример использования
@@ -37,21 +37,21 @@ public class MainActivity extends AppCompatActivity implements
         findViewById(R.id.open_camera).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                photos.takePhotoFromCamera();
+                photos.takePhotoFromCamera(MainActivity.this);
             }
         });
 
         findViewById(R.id.open_gallery).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                photos.selectedPhotoFromGallery();
+                photos.selectedPhotoFromGallery(MainActivity.this);
             }
         });
 
         findViewById(R.id.open_chooser).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                photos.selectMethodOfAddingPhoto();
+                photos.selectMethodOfAddingPhoto(MainActivity.this);
             }
         });
     }
@@ -67,16 +67,16 @@ public class MainActivity extends AppCompatActivity implements
         startActivityForResult(intent, requestCode);
     }
 
-    private void showPhoto(String path) {
+    private void showPhoto(Uri uri) {
         // Абсолютны путь к файлу, можно отображать
-        Picasso.with(this)
-                .load(new File(path))
+        Glide.with(this)
+                .load(uri)
                 .into(photo);
     }
 
     @Override
-    public void onError(int errorCode) {
-        showMessage("ERROR CODE " + errorCode);
+    public void onError(ErrorCode errorCode) {
+        showMessage("ERROR CODE " + errorCode.name());
     }
 
     @Override
@@ -84,22 +84,16 @@ public class MainActivity extends AppCompatActivity implements
         showMessage(state ? "START" : "STOP");
     }
 
-    /*@Override
-    public void getPath(String path) {
-        showMessage("Пришел результат с камеры или из галереи");
-        showPhoto(path);
-    }*/
-
     @Override
-    public void getPathFromGallery(String path) {
+    public void getPathFileFromGallery(Uri uri) {
         showMessage("Пришел результат из галереи");
-        showPhoto(path);
+        showPhoto(uri);
     }
 
     @Override
-    public void getPathFromCamera(String path) {
+    public void getPathFromCamera(Uri uri) {
         showMessage("Пришел результат с камеры");
-        showPhoto(path);
+        showPhoto(uri);
     }
 
     private void showMessage(String message) {

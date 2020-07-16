@@ -1,13 +1,16 @@
 package com.sequenia.photo.listeners;
 
+import android.net.Uri;
+
 /**
  * Слушатель на получение результата (абсолютного пути к файлу)
  */
 public interface PhotoResultListener extends StartIntentForResult {
+
     /**
-     * Возвращение результата
+     * Получить путь к файлу
      *
-     * @param path - пути к фотография
+     * @param uri пути к фотография
      */
-    void getPath(String path);
+    void getFilePath(Uri uri);
 }

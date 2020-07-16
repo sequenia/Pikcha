@@ -2,25 +2,19 @@ package com.sequenia.file;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Environment;
-import android.os.ParcelFileDescriptor;
+
 import androidx.annotation.NonNull;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 /**
- * Created by Ringo on 30.06.2016.
- * <p>
  * Работа с файлами
  * - создает файл в нужном месте
  * - проверяет файл на существование
@@ -28,241 +22,166 @@ import java.util.Locale;
 public class FilesUtils {
 
     private final static String EXP_PNG = "png";
-
     private final static String EXP_JPEG = "jpeg";
 
     /**
-     * Создание файла JPEG в открытой директории с дефолтовым именем
+     * Создание файла JPEG с уникальным именем
      *
-     * @return - файл с дефолтовым именем
+     * @return созданный файл
      */
-    public static File createJPGFileInOpenDirectory(Context context) throws IOException {
-        return createFile(createOpenDirectory(context), getDefaultFileName(EXP_JPEG), EXP_JPEG);
+    public static File createJPGFile(Context context) throws IOException {
+        return createFileInAppSpecificDirectory(context, EXP_JPEG);
     }
 
     /**
-     * Создание файла JPEG в закрытой директории с дефолтовым именем
+     * Создание файла JPEG
      *
-     * @return - файл с дефолтовым именем
+     * @param fileName имя файла
+     * @return созданный файл
      */
-    public static File createJPGFileInCloseDirectory(Context context) throws IOException {
-        return createFile(createCloseDirectory(context), getDefaultFileName(EXP_JPEG), EXP_JPEG);
+    public static File createJPGFile(Context context, String fileName) throws IOException {
+        return createFile(getInAppDirectory(context), fileName, EXP_JPEG);
     }
 
     /**
-     * Создание файла JPEG в открытой директории с заданным именем
+     * Создание файла JPEG с уникальным именем
      *
-     * @param name - имя файла
-     * @return - файл с дефолтовым именем
+     * @return созданный файл
      */
-    public static File createJPGFileInOpenDirectory(Context context, String name)
+    public static File createPNGFile(Context context) throws IOException {
+        return createFileInAppSpecificDirectory(context, EXP_PNG);
+    }
+
+    /**
+     * Создание файла JPEG
+     *
+     * @param fileName имя файла
+     * @return созданный файл
+     */
+    public static File createPNGFile(Context context, String fileName) throws IOException {
+        return createFile(getInAppDirectory(context), fileName, EXP_PNG);
+    }
+
+    /**
+     * Запись @{@link Bitmap} в файл
+     *
+     * @param bitmap   @{@link Bitmap}
+     * @param compress процент сжатия
+     * @return файл, в который быз записан @{@link Bitmap}
+     */
+    public static File saveBitmapToPNGFile(Context context, Bitmap bitmap, int compress)
             throws IOException {
-        return createFile(createOpenDirectory(context), name, EXP_JPEG);
+        return saveBitmapToPNGFile(context, bitmap, getDefaultFileName(EXP_PNG), compress);
     }
 
     /**
-     * Создание файла JPEG в закрытой директории с заданным именем
+     * Запись @{@link Bitmap} в файл
      *
-     * @param name - имя файла
-     * @return - файл с дефолтовым именем
+     * @param bitmap   @{@link Bitmap}
+     * @param fileName имя файла
+     * @param compress процент сжатия
+     * @return файл, в который быз записан @{@link Bitmap}
      */
-    public static File createJPGFileInCloseDirectory(Context context, String name)
+    public static File saveBitmapToPNGFile(Context context, Bitmap bitmap, String fileName,
+                                           int compress) throws IOException {
+        return saveBitmap(context, bitmap, fileName, EXP_PNG, compress);
+    }
+
+    /**
+     * Запись @{@link Bitmap} в файл
+     *
+     * @param bitmap   @{@link Bitmap}
+     * @param compress процент сжатия
+     * @return файл, в который быз записан @{@link Bitmap}
+     */
+    public static File saveBitmapToJPGFile(Context context, Bitmap bitmap, int compress)
             throws IOException {
-        return createFile(createCloseDirectory(context), name, EXP_JPEG);
+        return saveBitmapToJPGFile(context, bitmap, getDefaultFileName(EXP_JPEG), compress);
     }
 
     /**
-     * Создание файла JPEG в открытой директории с дефолтовым именем
+     * Запись @{@link Bitmap} в файл
      *
-     * @return - файл с дефолтовым именем
+     * @param bitmap   @{@link Bitmap}
+     * @param fileName имя файла
+     * @param compress процент сжатия
+     * @return файл, в который быз записан @{@link Bitmap}
      */
-    public static File createPNGFileInOpenDirectory(Context context) throws IOException {
-        return createFile(createOpenDirectory(context), getDefaultFileName(EXP_PNG), EXP_PNG);
+    public static File saveBitmapToJPGFile(Context context, Bitmap bitmap, String fileName,
+                                           int compress) throws IOException {
+        return saveBitmap(context, bitmap, fileName, EXP_JPEG, compress);
     }
 
     /**
-     * Создание файла JPEG в закрытой директории с дефолтовым именем
+     * Копирование файла в директорию приложения
      *
-     * @return - файл с дефолтовым именем
+     * @param context  контекст
+     * @param uri      путь к файлу
+     * @param listener слушатель для получения состояния копирования файла
      */
-    public static File createPNGFileInCloseDirectory(Context context) throws IOException {
-        return createFile(createCloseDirectory(context), getDefaultFileName(EXP_PNG), EXP_PNG);
+    public static void copyFileToInAppDirectory(Context context, Uri uri, CopyFileListener listener)
+            throws IOException, OutOfMemoryError {
+
+        File fileDirectory = getInAppDirectory(context);
+        copyFile(context, fileDirectory, uri, listener);
     }
 
     /**
-     * Создание файла JPEG в открытой директории с заданным именем
+     * Копирование файла в кэш директорию приложения
      *
-     * @param name - имя файла
-     * @return - файл с дефолтовым именем
+     * @param context  контекст
+     * @param uri      путь к файлу
+     * @param listener слушатель для получения состояния копирования файла
      */
-    public static File createPNGFileInOpenDirectory(Context context, String name)
-            throws IOException {
-        return createFile(createOpenDirectory(context), name, EXP_PNG);
+    public static void copyFileToCashDirectory(Context context, Uri uri, CopyFileListener listener)
+            throws IOException, OutOfMemoryError {
+
+        File outputFile = getCashDirectory(context);
+        copyFile(context, outputFile, uri, listener);
     }
 
     /**
-     * Создание файла JPEG в закрытой директории с заданным именем
+     * Удалить файл
      *
-     * @param name - имя файла
-     * @return - файл с дефолтовым именем
+     * @param context - контекст
+     * @param uri     - путь к файлу
      */
-    public static File createPNGFileInCloseDirectory(Context context, String name)
-            throws IOException {
-        return createFile(createCloseDirectory(context), name, EXP_PNG);
+    public static void deleteFile(Context context, Uri uri) {
+        new FileExtension(context, uri).delete();
     }
 
     /**
-     * Запись Bitmap в файл
+     * Проверка существования файла
      *
-     * @param base     - Bitmap, который нужно сохранить в файле
-     * @param compress - процент сжатия
-     * @return путь к файлу, в который записан Bitmap
+     * @param context контекст
+     * @param uri     пусть к файлу
+     * @return true файл существует и не пустой
      */
-    public static String saveBitmapToPNGFile(Context context, Bitmap base, int compress)
-            throws IOException {
-        return saveBitmap(context, base, getDefaultFileName(EXP_PNG), EXP_PNG, compress);
+    public static boolean fileExists(Context context, Uri uri) throws IOException {
+        return new FileExtension(context, uri).exist();
     }
 
     /**
-     * Запись Bitmap в файл
+     * Получить директорию приложения
+     * <p>
+     * С 29 и выше апи другие приложения не смогут считать эти файлы
+     * При удаление приложения, удаляются и файлы
+     * <p>
+     * Не нужены разрешения для записи и чтения
+     * <p>
+     * Проверка на запись во внешнее хранилище есть, так как на некоторых устройствах
+     * внешнее хранилище представлено только sd-картой
      *
-     * @param base     - Bitmap, который нужно сохранить в файле
-     * @param name     - имя файла
-     * @param compress - процент сжатия
-     * @return путь к файлу, в который записан Bitmap
+     * @return директория приложения
      */
-    public static String saveBitmapToPNGFile(Context context, Bitmap base, String name,
-                                             int compress) throws IOException {
-        return saveBitmap(context, base, name, EXP_PNG, compress);
+    private static File getInAppDirectory(Context context) {
+        return isExternalStorageWritable() ?
+                context.getExternalFilesDir(Environment.DIRECTORY_PICTURES) : context.getFilesDir();
     }
 
     /**
-     * Запись Bitmap в файл
+     * Проверка разрешения для записи во внешнем хранилище
      *
-     * @param base     - Bitmap, который нужно сохранить в файле
-     * @param compress - процент сжатия
-     * @return путь к файлу, в который записан Bitmap
-     */
-    public static String saveBitmapToJPGFile(Context context, Bitmap base, int compress)
-            throws IOException {
-        return saveBitmap(context, base, getDefaultFileName(EXP_JPEG), EXP_JPEG, compress);
-    }
-
-    /**
-     * Запись Bitmap в файл
-     *
-     * @param base     - Bitmap, который нужно сохранить в файле
-     * @param name     - имя файла
-     * @param compress - процент сжатия
-     * @return путь к файлу, в который записан Bitmap
-     */
-    public static String saveBitmapToJPGFile(Context context, Bitmap base, String name,
-                                             int compress) throws IOException {
-        return saveBitmap(context, base, name, EXP_JPEG, compress);
-    }
-
-    /**
-     * Удаляем файла
-     *
-     * @param path - путь к файлу, который удаляется
-     */
-    public static void deleteFile(String path) {
-        if (path == null) {
-            return;
-        }
-
-        File file = new File(path);
-        if (file.exists()) {
-            file.delete();
-        }
-    }
-
-    /**
-     * Создание закрытой директории (доступ только для приложения)
-     *
-     * @return - директория
-     */
-    private static File createCloseDirectory(Context context) {
-        return isExternalStorageWritable()
-                ? context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-                : context.getFilesDir();
-    }
-
-    /**
-     * Создание открытой директории(файлы отображаются в проводниках)
-     *
-     * @return - директория
-     */
-    private static File createOpenDirectory(Context context) {
-        return isExternalStorageWritable()
-                ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                : context.getDir(Environment.DIRECTORY_PICTURES, Context.MODE_PRIVATE);
-    }
-
-    /**
-     * Создание файла в указанной директории и с указанным расширением
-     *
-     * @param storageDir - директория
-     * @param exp        - расширение
-     * @return - созданный файл
-     */
-    private static File createFile(File storageDir, String name, String exp) throws IOException {
-
-        // не нашлось директории и не удалось создать
-        if (!storageDir.exists() && !storageDir.mkdirs()) {
-            return null;
-        }
-
-        File image = File.createTempFile(name, "." + exp, storageDir);
-        // Доступность файла для внешних приложений
-        image.setReadable(true, false);
-        return image;
-    }
-
-    private static String getDefaultFileName(String exp) {
-        // Создание имени файла
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-                .format(new Date());
-        return exp + "_" + timeStamp + "_";
-    }
-
-    /**
-     * Сохранение Bitmap в файл
-     *
-     * @param context  - контектс
-     * @param base     - Bitmap, который сохраняется в файл
-     * @param name     - имя файла
-     * @param exp      - расширение файла
-     * @param compress - процент сжатия
-     * @return - путь к файлу, в который записан Bitmap
-     */
-    private static String saveBitmap(@NonNull Context context, @NonNull Bitmap base,
-                                     @NonNull String name, @NonNull String exp,
-                                     int compress) throws IOException {
-        File file = createFile(createOpenDirectory(context), name, exp);
-
-        if (file == null) {
-            return null;
-        }
-
-        FileOutputStream fOut = new FileOutputStream(file);
-        base.compress(getCompressFormat(exp), compress, fOut);
-        fOut.flush();
-        fOut.close();
-        return file.getAbsolutePath();
-    }
-
-    /**
-     * Получение типа компрессии в зависимости от типа файла
-     *
-     * @param exp - тип файла
-     * @return - тип компрессии
-     */
-    private static Bitmap.CompressFormat getCompressFormat(String exp) {
-        return exp.equals(EXP_PNG) ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
-    }
-
-    /**
      * @return true, если внешнее хранилище доступно для записи
      */
     private static boolean isExternalStorageWritable() {
@@ -271,62 +190,103 @@ public class FilesUtils {
     }
 
     /**
-     * Проверка файла на существование и
-     * корректность информации
+     * Получить директорию приложения для кэша
+     * <p>
+     * При удаление приложения, удаляются и файлы
+     * <p>
+     * Не нужены разрешения для записи и чтения
+     * <p>
+     * Проверка на запись во внешнее хранилище есть, так как на некоторых устройствах
+     * внешнее хранилище представлено только sd-картой
      *
-     * @param path - путь к файлу
-     * @return - true - файл существует и информация в нем корректна
+     * @return директория приложения для кэша
      */
-    public static boolean checkedFile(String path) {
-        if (path == null) {
-            return false;
-        }
-
-        File file = new File(path);
-        return file.exists() && file.length() > 0;
+    private static File getCashDirectory(Context context) {
+        return isExternalStorageWritable() ? context.getExternalCacheDir() : context.getCacheDir();
     }
 
     /**
-     * Получение поворота файла
+     * Создание файла в указанной директории и с указанным расширением
      *
-     * @param path - путь к файлу
-     * @return - поворот файла
+     * @param storageDir директория
+     * @param exp        расширение
+     * @return созданный файл
      */
-    public int getFileOrientation(String path) throws IOException {
-        ExifInterface exif = new ExifInterface(path);
-        return exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_UNDEFINED);
-    }
-
-    /**
-     * Копирует файл в новой директории
-     *
-     * @param context - контекст
-     * @param uri     - ури на файл
-     * @return - путь к файлу
-     */
-    public static String copyFile(Context context, Uri uri) throws IOException, OutOfMemoryError {
-        ParcelFileDescriptor file = context.getContentResolver().openFileDescriptor(uri, "r");
-        File dbFile = createJPGFileInOpenDirectory(context);
-
-        if (file == null) {
+    private static File createFile(File storageDir, String name, String exp) throws IOException {
+        // не нашлось директории и не удалось создать
+        if (!storageDir.exists() && !storageDir.mkdirs()) {
             return null;
         }
 
-        InputStream fileStream = new FileInputStream(file.getFileDescriptor());
-        OutputStream newDatabase = new FileOutputStream(dbFile);
-
-        byte[] buffer = new byte[1024];
-        int length;
-
-        while ((length = fileStream.read(buffer)) > 0) {
-            newDatabase.write(buffer, 0, length);
-        }
-
-        newDatabase.flush();
-        fileStream.close();
-        newDatabase.close();
-        return dbFile.getAbsolutePath();
+        File file = File.createTempFile(name, "." + exp, storageDir);
+        // Доступность файла для внешних приложений
+        file.setReadable(true, false);
+        return file;
     }
 
+    /**
+     * Получить имя файла по умолчание
+     *
+     * @param exp расширение файла
+     * @return имя файла
+     */
+    private static String getDefaultFileName(String exp) {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+                .format(new Date());
+        return String.format("%s_%s_", exp, timeStamp);
+    }
+
+    /**
+     * Сохранение @{@link Bitmap} в файл
+     *
+     * @param context  контектс
+     * @param bitmap   @{@link Bitmap}
+     * @param fileName имя файла
+     * @param exp      расширение файла
+     * @param compress процент сжатия
+     * @return файл, в который быз записан @{@link Bitmap}
+     */
+    private static File saveBitmap(@NonNull Context context, @NonNull Bitmap bitmap,
+                                   @NonNull String fileName, @NonNull String exp,
+                                   int compress) throws IOException {
+
+        File outputFile = createFile(getInAppDirectory(context), fileName, exp);
+
+        if (outputFile == null) {
+            return null;
+        }
+
+        FileOutputStream outputStream = new FileOutputStream(outputFile);
+        bitmap.compress(getCompressFormat(exp), compress, outputStream);
+        outputStream.flush();
+        outputStream.close();
+        return outputFile;
+    }
+
+    /**
+     * Получение типа компрессии в зависимости от типа файла
+     *
+     * @param exp тип файла
+     * @return тип компрессии
+     */
+    private static Bitmap.CompressFormat getCompressFormat(String exp) {
+        return exp.equals(EXP_PNG) ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+    }
+
+    private static File createFileInAppSpecificDirectory(Context context, String exp)
+            throws IOException {
+        return createFile(getInAppDirectory(context), getDefaultFileName(exp), exp);
+    }
+
+    private static void copyFile(Context context, File fileDirectoryToCopy, Uri inputUri,
+                                 CopyFileListener listener) throws IOException {
+
+        FileExtension fileExtension = new FileExtension(context, inputUri);
+
+        String fileExp = fileExtension.getExp();
+        String fileName = getDefaultFileName(fileExp);
+        File outputFile = createFile(fileDirectoryToCopy, fileName, fileExp);
+
+        fileExtension.copyTo(outputFile, listener);
+    }
 }
