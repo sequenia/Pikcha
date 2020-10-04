@@ -12,7 +12,7 @@ allprojects {
 }
 
 dependencies {
-
+    implementation 'com.github.sequenia.Pikcha:pikcha:Y.Y.Y'
     implementation 'gun0912.ted:tedpermission:X.X.X'
 }
 ```
