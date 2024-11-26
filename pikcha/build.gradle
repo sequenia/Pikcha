@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 android {
     compileSdkVersion versions.compileSdk
@@ -25,6 +25,16 @@ android {
 
 dependencies {
     compileOnly project(':stub')
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+            }
+        }
+    }
 }
 
 task androidJavadocs(type: Javadoc) {
