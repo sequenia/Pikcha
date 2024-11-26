@@ -1,18 +1,14 @@
-package com.gun0912.tedpermission;
+package com.gun0912.tedpermission.normal;
 
-import android.content.Context;
+import com.gun0912.tedpermission.PermissionBuilder;
 
 public class TedPermission {
 
-    public static Builder with(Context context) {
+    public static Builder create() {
         throw new RuntimeException("stub!");
     }
 
     public static class Builder extends PermissionBuilder<Builder> {
-
-        private Builder(Context context) {
-            super(context);
-        }
 
         public void check() {
             throw new RuntimeException("stub!");

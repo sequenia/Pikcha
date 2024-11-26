@@ -3,7 +3,7 @@ package com.sequenia.photo.sources.permissions;
 import android.content.Context;
 
 import com.gun0912.tedpermission.PermissionListener;
-import com.gun0912.tedpermission.TedPermission;
+import com.gun0912.tedpermission.normal.TedPermission;
 import com.sequenia.photo.R;
 
 import java.util.List;
@@ -57,7 +57,7 @@ class PermissionChecker {
             return;
         }
 
-        TedPermission.with(context)
+        TedPermission.create()
                 .setPermissionListener(new PermissionListener() {
                     @Override
                     public void onPermissionGranted() {
