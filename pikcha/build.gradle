@@ -1,5 +1,7 @@
-apply plugin: 'com.android.library'
-apply plugin: 'maven'
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
 
 android {
     compileSdkVersion versions.compileSdk
@@ -18,13 +20,24 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 }
 
 dependencies {
     compileOnly project(':stub')
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                from components.release
+            }
+        }
+    }
 }
 
 task androidJavadocs(type: Javadoc) {
